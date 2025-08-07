@@ -212,20 +212,24 @@ impl PyEvent {
         dict.set_item("aggregate_version", self.inner.aggregate_version)?;
         dict.set_item("timestamp", self.inner.timestamp.to_rfc3339())?;
         
-        // Convert event data
-        let data = match &self.inner.data {
+        // Flatten event data directly into the dictionary (not nested under "data")
+        match &self.inner.data {
             EventData::Json(value) => {
-                let json_str = serde_json::to_string(value)
-                    .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
-                let json_module = py.import("json")?;
-                json_module.call_method1("loads", (json_str,))?
+                if let serde_json::Value::Object(obj) = value {
+                    for (key, val) in obj {
+                        let json_str = serde_json::to_string(val)
+                            .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+                        let json_module = py.import("json")?;
+                        let python_value = json_module.call_method1("loads", (json_str,))?;
+                        dict.set_item(key, python_value)?;
+                    }
+                }
             },
-            EventData::Protobuf(bytes) => {
-                let bytes_obj = pyo3::types::PyBytes::new(py, bytes);
-                bytes_obj.into()
+            EventData::Protobuf(_bytes) => {
+                // For protobuf data, we'd need to deserialize based on the event type
+                // For now, skip this case as we're using JSON
             },
         };
-        dict.set_item("data", data)?;
         
         // Convert metadata
         let metadata_dict = PyDict::new(py);

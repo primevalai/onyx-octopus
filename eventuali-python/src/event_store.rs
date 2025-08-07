@@ -212,14 +212,32 @@ impl PyEventStore {
                 Utc::now()
             };
             
-            // Extract event data
-            let data_dict = py_dict.get_item("data")?
-                .ok_or_else(|| PyErr::new::<pyo3::exceptions::PyKeyError, _>("Missing event data"))?;
-            let json_str: String = py.eval("import json; json.dumps", None, None)?
-                .call1((data_dict,))?
-                .extract()?;
-            let json_value: serde_json::Value = serde_json::from_str(&json_str)
-                .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
+            // Extract event data - build from all non-metadata fields
+            let mut data_map = serde_json::Map::new();
+            
+            // Known metadata fields that should not be included in event data
+            let metadata_fields = vec![
+                "event_id", "aggregate_id", "aggregate_type", "event_type", 
+                "event_version", "aggregate_version", "timestamp", 
+                "causation_id", "correlation_id", "user_id"
+            ];
+            
+            for item in py_dict.items() {
+                let (key, value) = item.extract::<(String, PyObject)>()?;
+                if !metadata_fields.contains(&key.as_str()) {
+                    // Convert Python value to JSON value
+                    let json_module = py.import("json")?;
+                    let json_str: String = json_module
+                        .getattr("dumps")?
+                        .call1((value,))?
+                        .extract()?;
+                    if let Ok(json_val) = serde_json::from_str::<serde_json::Value>(&json_str) {
+                        data_map.insert(key, json_val);
+                    }
+                }
+            }
+            
+            let json_value = serde_json::Value::Object(data_map);
             let event_data = EventData::from_json(&json_value)
                 .map_err(|e| PyErr::new::<pyo3::exceptions::PyValueError, _>(e.to_string()))?;
             

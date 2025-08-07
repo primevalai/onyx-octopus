@@ -72,7 +72,7 @@ class EventStore:
             event.event_type = event.get_event_type()
             
             # Convert to dict for Rust backend
-            event_dict = event.dict()
+            event_dict = event.model_dump()
             events.append(event_dict)
         
         try:

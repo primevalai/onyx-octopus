@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tokio::sync::Mutex;
 use crate::event::PyEvent;
 use crate::error::map_rust_error_to_python;
+use uuid::Uuid;
 
 #[pyclass]
 pub struct PyEventStreamer {
@@ -24,15 +25,23 @@ impl PyEventStreamer {
         }
     }
 
-    #[pyo3(signature = (subscription_id, aggregate_type_filter = None, event_type_filter = None))]
-    pub fn subscribe<'p>(
-        &self, 
-        py: Python<'p>, 
-        subscription_id: String,
-        aggregate_type_filter: Option<String>,
-        event_type_filter: Option<String>
-    ) -> PyResult<&'p PyAny> {
+    pub fn subscribe<'p>(&self, py: Python<'p>, subscription_dict: &PyDict) -> PyResult<&'p PyAny> {
         let streamer = self.streamer.clone();
+        
+        // Extract subscription parameters from dictionary
+        let subscription_id = subscription_dict
+            .get_item("id")?
+            .and_then(|v| v.extract::<String>().ok())
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+            
+        let aggregate_type_filter = subscription_dict
+            .get_item("aggregate_type_filter")?
+            .and_then(|v| v.extract::<String>().ok());
+            
+        let event_type_filter = subscription_dict
+            .get_item("event_type_filter")?
+            .and_then(|v| v.extract::<String>().ok());
+        
         let subscription = Subscription {
             id: subscription_id,
             aggregate_type_filter,
@@ -87,6 +96,26 @@ impl PyEventStreamer {
                 .await
                 .map_err(map_rust_error_to_python)?;
             Ok(position)
+        })
+    }
+
+    #[pyo3(signature = (event, stream_position, global_position))]
+    pub fn publish_event<'p>(
+        &self, 
+        py: Python<'p>, 
+        event: &PyEvent, 
+        stream_position: u64, 
+        global_position: u64
+    ) -> PyResult<&'p PyAny> {
+        let streamer = self.streamer.clone();
+        let event = event.inner.clone();
+        
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let streamer_guard = streamer.lock().await;
+            streamer_guard.publish_event(event, stream_position, global_position)
+                .await
+                .map_err(map_rust_error_to_python)?;
+            Ok(())
         })
     }
 
@@ -145,43 +174,100 @@ impl PySubscriptionBuilder {
         }
     }
 
-    pub fn with_id(&mut self, id: String) -> PyResult<()> {
-        self.id = Some(id);
-        Ok(())
+    pub fn with_id(mut slf: PyRefMut<Self>, id: String) -> PyRefMut<Self> {
+        slf.id = Some(id);
+        slf
     }
 
-    pub fn filter_by_aggregate_type(&mut self, aggregate_type: String) -> PyResult<()> {
-        self.aggregate_type_filter = Some(aggregate_type);
-        Ok(())
+    pub fn filter_by_aggregate_type(mut slf: PyRefMut<Self>, aggregate_type: String) -> PyRefMut<Self> {
+        slf.aggregate_type_filter = Some(aggregate_type);
+        slf
     }
 
-    pub fn filter_by_event_type(&mut self, event_type: String) -> PyResult<()> {
-        self.event_type_filter = Some(event_type);
-        Ok(())
+    pub fn filter_by_event_type(mut slf: PyRefMut<Self>, event_type: String) -> PyRefMut<Self> {
+        slf.event_type_filter = Some(event_type);
+        slf
     }
 
-    pub fn build(&self) -> PyResult<(String, Option<String>, Option<String>)> {
-        let id = self.id.clone().unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
-        Ok((id, self.aggregate_type_filter.clone(), self.event_type_filter.clone()))
+    pub fn build(&self, py: Python<'_>) -> PyResult<PyObject> {
+        let py_dict = PyDict::new(py);
+        
+        let id = self.id.clone().unwrap_or_else(|| Uuid::new_v4().to_string());
+        py_dict.set_item("id", id)?;
+        
+        if let Some(ref agg_filter) = self.aggregate_type_filter {
+            py_dict.set_item("aggregate_type_filter", agg_filter)?;
+        }
+        
+        if let Some(ref event_filter) = self.event_type_filter {
+            py_dict.set_item("event_type_filter", event_filter)?;
+        }
+        
+        Ok(py_dict.to_object(py))
     }
 }
 
 #[pyclass]
 pub struct PyProjection {
-    _handler: PyObject,
+    handler: PyObject,
+    last_position: Arc<Mutex<Option<u64>>>,
 }
 
 #[pymethods]
 impl PyProjection {
     #[new]
     pub fn new(handler: PyObject) -> Self {
-        Self { _handler: handler }
+        Self { 
+            handler,
+            last_position: Arc::new(Mutex::new(None)),
+        }
     }
 
-    pub fn handle_event<'p>(&self, py: Python<'p>, _event: &PyEvent) -> PyResult<&'p PyAny> {
+    pub fn handle_event<'p>(&self, py: Python<'p>, event: &PyEvent) -> PyResult<&'p PyAny> {
+        let handler = self.handler.clone();
+        let py_event = Py::new(py, PyEvent { inner: event.inner.clone() })?;
+        
         pyo3_asyncio::tokio::future_into_py(py, async move {
-            // In a full implementation, this would call the Python handler
-            // For now, just return success
+            Python::with_gil(|py| {
+                // Call the Python handler function with the event
+                if let Ok(coroutine) = handler.call1(py, (py_event,)) {
+                    // If it returns a coroutine, we would need to await it
+                    // For now, assume it's a sync function
+                    Ok(())
+                } else {
+                    Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(
+                        "Failed to call projection handler"
+                    ))
+                }
+            })
+        })
+    }
+
+    pub fn reset<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+        let last_position = self.last_position.clone();
+        
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut pos = last_position.lock().await;
+            *pos = None;
+            Ok(())
+        })
+    }
+
+    pub fn get_last_processed_position<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+        let last_position = self.last_position.clone();
+        
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let pos = last_position.lock().await;
+            Ok(*pos)
+        })
+    }
+
+    pub fn set_last_processed_position<'p>(&self, py: Python<'p>, position: u64) -> PyResult<&'p PyAny> {
+        let last_position = self.last_position.clone();
+        
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            let mut pos = last_position.lock().await;
+            *pos = Some(position);
             Ok(())
         })
     }
