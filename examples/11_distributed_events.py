@@ -338,14 +338,32 @@ class DistributedEventCoordinator:
     def _extract_event_data(self, event: Event) -> Dict[str, Any]:
         """Extract event data for hashing."""
         data = {}
-        for attr_name in dir(event):
-            if not attr_name.startswith('_') and not callable(getattr(event, attr_name)):
+        
+        # Use Pydantic model fields to avoid deprecated attribute access
+        if hasattr(event.__class__, 'model_fields'):
+            # Get field names from the model class, not instance
+            field_names = event.__class__.model_fields.keys()
+            for field_name in field_names:
                 try:
-                    value = getattr(event, attr_name)
+                    value = getattr(event, field_name)
                     if isinstance(value, (str, int, float, bool, type(None))):
-                        data[attr_name] = value
+                        data[field_name] = value
                 except:
                     continue
+        else:
+            # Fallback for non-Pydantic events - filter out known problematic attributes
+            excluded_attrs = {'model_fields', 'model_computed_fields', 'model_config'}
+            for attr_name in dir(event):
+                if (not attr_name.startswith('_') and 
+                    attr_name not in excluded_attrs and 
+                    not callable(getattr(event, attr_name))):
+                    try:
+                        value = getattr(event, attr_name)
+                        if isinstance(value, (str, int, float, bool, type(None))):
+                            data[attr_name] = value
+                    except:
+                        continue
+        
         return data
 
 async def demonstrate_distributed_events():
