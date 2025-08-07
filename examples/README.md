@@ -452,32 +452,6 @@ uv run python ../examples/16_enterprise_features.py
 
 ---
 
-## Legacy Examples
-
-### Basic Usage (Standalone)
-**File**: `basic_usage.py`
-**Status**: Legacy - demonstrates core concepts without event store integration
-
-```bash
-uv run python ../examples/basic_usage.py
-```
-
-**Purpose**: Shows fundamental event sourcing concepts in isolation
-
----
-
-### Streaming Example
-**File**: `streaming_example.py`
-**Status**: Legacy - early streaming implementation  
-
-```bash
-uv run python ../examples/streaming_example.py
-```
-
-**Purpose**: Demonstrates event streaming concepts (superseded by examples 07-08)
-
----
-
 ## Running All Examples
 
 ### Quick Verification (Basic Examples)
