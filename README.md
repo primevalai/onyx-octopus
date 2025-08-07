@@ -21,8 +21,30 @@ Eventuali combines the performance and memory safety of Rust with the developer 
 
 ## Installation
 
+### Production Installation
 ```bash
-pip install eventuali
+# Install from PyPI (when available)
+uv add eventuali
+```
+
+### Development Installation
+```bash
+# Clone the repository
+git clone git@github.com:primevalai/eventuali.git
+cd eventuali/eventuali-python
+
+# Install with development dependencies  
+uv sync
+
+# Install required tools
+uv tool install maturin
+uv tool install patchelf
+
+# Build Python bindings
+uv run maturin develop
+
+# Verify installation
+uv run python ../examples/01_basic_event_store_simple.py
 ```
 
 ## Quick Start
@@ -95,29 +117,51 @@ Built from the ground up with async/await support using Tokio (Rust) and asyncio
 
 ## Development
 
-This project uses a Rust/Python hybrid approach:
+This project uses a Rust/Python hybrid approach with **UV as the mandated Python toolchain**:
 
 1. **Rust workspace** with `eventuali-core` and `eventuali-python`
 2. **Maturin** for building Python wheels with embedded Rust
 3. **PyO3** for seamless Rust-Python integration
+4. **UV** for all Python dependency management, tool installation, and script execution
+
+### UV Requirements
+
+**⚠️ IMPORTANT: This project exclusively uses UV for Python operations.**
+
+UV provides faster, more reliable Python dependency management and ensures consistent environments across development and CI/CD:
+
+- **Faster installs**: 10-100x faster than pip
+- **Dependency resolution**: More reliable than pip-tools
+- **Tool management**: Built-in support for development tools
+- **Environment isolation**: Better virtual environment handling
 
 ### Building from Source
 
+**⚠️ Use UV for all Python operations as per project standards**
+
 ```bash
-# Install dependencies
-pip install maturin[patchelf]
+# Install required tools using UV
+uv tool install maturin
+uv tool install patchelf
+
+# Install project dependencies
+cd eventuali-python
+uv sync
 
 # Build and install in development mode
-cd eventuali-python
-maturin develop
+uv run maturin develop
 
 # Run tests
-pytest
+uv run pytest
+
+# Format code
+uv run black ../examples/
+uv run ruff check ../examples/ --fix
 ```
 
 ### Testing Your Build
 
-After building, verify everything works by running the examples:
+After building, verify everything works by running the examples using **UV**:
 
 ```bash
 # Test the Rust core (fastest way to verify the build)
@@ -126,8 +170,18 @@ cargo run --package eventuali-core --example rust_streaming_demo
 # Test Python bindings compilation
 cargo build --package eventuali-python
 
-# Run Python examples (when bindings are integrated)
-python examples/basic_usage.py
+# Run Python examples using UV (required)
+cd eventuali-python
+uv run python ../examples/01_basic_event_store_simple.py
+uv run python ../examples/02_aggregate_lifecycle.py
+uv run python ../examples/03_error_handling.py
+uv run python ../examples/04_performance_testing.py
+
+# Advanced examples
+uv run python ../examples/05_multi_aggregate_simple.py
+uv run python ../examples/06_event_versioning.py
+uv run python ../examples/07_saga_patterns.py
+uv run python ../examples/08_projections.py
 ```
 
 See the [Examples](#examples) section for comprehensive documentation on running and understanding each example.
@@ -233,8 +287,8 @@ Key achievements:
 Learn the fundamentals of event sourcing with this comprehensive introduction.
 
 ```bash
-cd examples
-python basic_usage.py
+cd eventuali-python
+uv run python ../examples/basic_usage.py
 ```
 
 **What you'll learn:**
@@ -257,8 +311,8 @@ python basic_usage.py
 Explore real-time event streaming and projection building.
 
 ```bash
-cd examples  
-python streaming_example.py
+cd eventuali-python  
+uv run python ../examples/streaming_example.py
 ```
 
 **What you'll learn:**
@@ -284,7 +338,7 @@ Learn how to test event sourcing applications effectively.
 
 ```bash
 cd eventuali-python
-python -m pytest tests/test_basic.py -v
+uv run pytest tests/test_basic.py -v
 ```
 
 **Testing Patterns Covered:**
@@ -302,7 +356,7 @@ The fastest way to see Eventuali in action:
 
 ```bash
 # Clone and build
-git clone <repository-url>
+git clone git@github.com:primevalai/eventuali.git
 cd eventuali
 cargo build --release
 
@@ -312,23 +366,34 @@ cargo run --package eventuali-core --example rust_streaming_demo
 
 #### Python Examples Setup
 
-For Python examples (when Python bindings are fully integrated):
+**All Python examples use UV for dependency management:**
 
 ```bash
-# Ensure Python bindings compile
-cargo build --package eventuali-python
+# Setup development environment
+cd eventuali/eventuali-python
+uv sync
+uv tool install maturin
+uv tool install patchelf
 
-# Install Python dependencies
-pip install pydantic asyncio pytest
+# Build Python bindings
+uv run maturin develop
 
-# Run basic example
-python examples/basic_usage.py
-
-# Run streaming example  
-python examples/streaming_example.py
+# Run examples (8 comprehensive examples)
+uv run python ../examples/01_basic_event_store_simple.py     # Basic event sourcing
+uv run python ../examples/02_aggregate_lifecycle.py         # Complex aggregates
+uv run python ../examples/03_error_handling.py              # Error patterns
+uv run python ../examples/04_performance_testing.py         # Performance benchmarks
+uv run python ../examples/05_multi_aggregate_simple.py      # Multi-aggregate coordination
+uv run python ../examples/06_event_versioning.py            # Schema evolution
+uv run python ../examples/07_saga_patterns.py               # Distributed transactions
+uv run python ../examples/08_projections.py                 # Real-time projections
 
 # Run tests
-cd eventuali-python && python -m pytest tests/ -v
+uv run pytest tests/ -v
+
+# Code quality
+uv run black ../examples/
+uv run ruff check ../examples/ --fix
 ```
 
 ### Example Progression
