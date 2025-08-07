@@ -230,7 +230,7 @@ impl PyProjection {
         pyo3_asyncio::tokio::future_into_py(py, async move {
             Python::with_gil(|py| {
                 // Call the Python handler function with the event
-                if let Ok(coroutine) = handler.call1(py, (py_event,)) {
+                if let Ok(_coroutine) = handler.call1(py, (py_event,)) {
                     // If it returns a coroutine, we would need to await it
                     // For now, assume it's a sync function
                     Ok(())
