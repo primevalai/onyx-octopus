@@ -1,0 +1,38 @@
+[package]
+name = "eventuali-core"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance event sourcing core library in Rust"
+authors = ["PrimevalAI <info@primeval.ai>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/primevalai/eventuali"
+
+[dependencies]
+tokio = { workspace = true }
+sqlx = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+prost = { workspace = true }
+prost-types = { workspace = true }
+async-trait = { workspace = true }
+base64 = "0.22"
+
+[build-dependencies]
+prost-build = "0.13"
+
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = ["postgres", "sqlite"]
+postgres = []
+sqlite = []
+
+[[bench]]
+name = "event_store_benchmarks"
+harness = false

@@ -1,0 +1,24 @@
+[package]
+name = "eventuali-python"
+version = "0.1.0"
+edition = "2021"
+description = "Python bindings for Eventuali event sourcing library"
+authors = ["PrimevalAI <info@primeval.ai>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/primevalai/eventuali"
+
+[lib]
+name = "eventuali_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+eventuali-core = { path = "../eventuali-core" }
+pyo3 = { workspace = true }
+pyo3-asyncio = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+anyhow = { workspace = true }
+pythonize = "0.20"

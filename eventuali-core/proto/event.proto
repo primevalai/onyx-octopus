@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package eventuali;
+
+// Event message for high-performance serialization
+message Event {
+  string id = 1;
+  string aggregate_id = 2;
+  string aggregate_type = 3;
+  string event_type = 4;
+  int32 event_version = 5;
+  int64 aggregate_version = 6;
+  bytes data = 7;
+  EventMetadata metadata = 8;
+  int64 timestamp = 9;
+}
+
+// Event metadata for tracking causation and correlation
+message EventMetadata {
+  string causation_id = 1;
+  string correlation_id = 2;
+  string user_id = 3;
+  map<string, string> headers = 4;
+}
+
+// Aggregate snapshot for performance optimization
+message AggregateSnapshot {
+  string aggregate_id = 1;
+  string aggregate_type = 2;
+  int64 version = 3;
+  bytes data = 4;
+  int64 timestamp = 5;
+}
+
+// Event stream for projections and subscriptions
+message EventStream {
+  string stream_id = 1;
+  string aggregate_type = 2;
+  repeated Event events = 3;
+  string checkpoint = 4;
+}
+
+// Common domain events for examples
+message UserRegistered {
+  string name = 1;
+  string email = 2;
+}
+
+message UserEmailChanged {
+  string old_email = 1;
+  string new_email = 2;
+}
+
+message UserDeactivated {
+  string reason = 1;
+}
+
+// Order domain events
+message OrderPlaced {
+  string customer_id = 1;
+  repeated OrderItem items = 2;
+  double total_amount = 3;
+}
+
+message OrderItem {
+  string product_id = 1;
+  string name = 2;
+  int32 quantity = 3;
+  double unit_price = 4;
+}
+
+message OrderShipped {
+  string tracking_number = 1;
+  string carrier = 2;
+  int64 shipped_at = 3;
+}
+
+message OrderCancelled {
+  string reason = 1;
+  double refund_amount = 2;
+}
