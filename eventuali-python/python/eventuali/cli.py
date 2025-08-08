@@ -157,6 +157,34 @@ def init(ctx, database_url, force):
     
     print_info(f"Initializing event store at: {db_url}")
     
+    # Handle file-based SQLite databases
+    if db_url.startswith('sqlite:///') or (db_url.startswith('sqlite://') and not db_url.startswith('sqlite://:memory:')):
+        # Extract SQLite file path from URL
+        if db_url.startswith('sqlite:///'):
+            # sqlite:///path format - absolute path
+            # The path already includes the leading slash
+            sqlite_path = db_url[9:]  # Remove 'sqlite://' prefix, keep the slash
+        elif db_url.startswith('sqlite://'):
+            # sqlite://path format - relative path after //
+            sqlite_path = db_url[9:]
+        
+        sqlite_file = Path(sqlite_path)
+        print_info(f"Database file path: {sqlite_file.absolute()}")
+        
+        # Create parent directories if they don't exist
+        if sqlite_file.parent != sqlite_file.parent.anchor:  # Check if parent is not root
+            sqlite_file.parent.mkdir(parents=True, exist_ok=True)
+            print_info(f"Created directory: {sqlite_file.parent}")
+        
+        # Check if file exists and handle force flag
+        if sqlite_file.exists() and not force:
+            print_error(f"Database file already exists: {sqlite_file}")
+            print_info("Use --force to overwrite existing database")
+            sys.exit(1)
+        elif sqlite_file.exists() and force:
+            print_info(f"Removing existing database file: {sqlite_file}")
+            sqlite_file.unlink()
+    
     async def _init():
         try:
             # Create event store to initialize database
