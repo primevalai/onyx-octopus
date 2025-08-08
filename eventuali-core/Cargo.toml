@@ -20,11 +20,14 @@ tracing = { workspace = true }
 prost = { workspace = true }
 prost-types = { workspace = true }
 async-trait = { workspace = true }
+futures = { workspace = true }
 base64 = "0.22"
 flate2 = "1.0"
 sha2 = "0.10"
 aes-gcm = "0.10"
 pbkdf2 = "0.12"
+hmac = "0.12"
+regex = "1.10"
 rusqlite = { workspace = true }
 
 # Observability dependencies
