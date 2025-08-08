@@ -25,7 +25,8 @@ from ._eventuali import (
     TenantConfig,
     TenantMetadata,
     ResourceLimits,
-    TenantManager
+    TenantManager,
+    TenantStorageMetrics
 )
 from .event_store import EventStore
 from .event import Event  
@@ -71,6 +72,7 @@ __all__ = [
     "TenantMetadata",
     "ResourceLimits",
     "TenantManager",
+    "TenantStorageMetrics",
     # Exceptions
     "EventualiError",
     "OptimisticConcurrencyError",

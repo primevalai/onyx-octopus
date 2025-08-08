@@ -16,7 +16,7 @@ use aggregate::PyAggregate;
 use streaming::{PyEventStreamer, PyEventStreamReceiver, PySubscriptionBuilder, PyProjection};
 use snapshot::{PySnapshotService, PySnapshotConfig, PyAggregateSnapshot};
 use security::{PyEventEncryption, PyKeyManager, PyEncryptionKey, PyEncryptedEventData, PyEncryptionAlgorithm, PySecurityUtils};
-use tenancy::{PyTenantId, PyTenantInfo, PyTenantConfig, PyTenantMetadata, PyResourceLimits, PyTenantManager};
+use tenancy::{PyTenantId, PyTenantInfo, PyTenantConfig, PyTenantMetadata, PyResourceLimits, PyTenantManager, PyTenantStorageMetrics};
 
 #[pymodule]
 fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
@@ -50,6 +50,7 @@ fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyTenantMetadata>()?;
     m.add_class::<PyResourceLimits>()?;
     m.add_class::<PyTenantManager>()?;
+    m.add_class::<PyTenantStorageMetrics>()?;
     
     // Register custom exceptions
     error::register_exceptions(py, m)?;

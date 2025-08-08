@@ -28,7 +28,8 @@ pub use security::{
 pub use tenancy::{
     TenantId, TenantInfo, TenantConfig, TenantMetadata, TenantIsolation, 
     IsolatedEventStore, TenantScope, TenantQuota, ResourceTracker, 
-    TenantManager, TenantOperations
+    TenantManager, TenantOperations, TenantAwareEventStorage, 
+    TenantStorageMetrics, TenantEventBatch
 };
 
 // Re-export specific backend implementations

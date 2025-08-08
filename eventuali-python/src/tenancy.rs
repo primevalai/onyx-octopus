@@ -4,7 +4,8 @@ use pyo3::exceptions::PyRuntimeError;
 use eventuali_core::tenancy::{
     TenantId as CoreTenantId, TenantInfo as CoreTenantInfo, TenantConfig as CoreTenantConfig,
     TenantMetadata as CoreTenantMetadata, ResourceLimits as CoreResourceLimits,
-    TenantManager as CoreTenantManager
+    TenantManager as CoreTenantManager, TenantAwareEventStorage as CoreTenantAwareEventStorage,
+    TenantStorageMetrics as CoreTenantStorageMetrics, TenantEventBatch as CoreTenantEventBatch
 };
 use crate::error::map_rust_error_to_python;
 use std::collections::HashMap;
@@ -480,5 +481,104 @@ impl PyTenantManager {
             dict.set_item("last_updated", metrics.last_updated.to_rfc3339()).unwrap();
             dict.into_py(py)
         })
+    }
+}
+
+/// Python wrapper for TenantStorageMetrics
+#[pyclass(name = "TenantStorageMetrics")]
+#[derive(Clone)]
+pub struct PyTenantStorageMetrics {
+    inner: CoreTenantStorageMetrics,
+}
+
+#[pymethods]
+impl PyTenantStorageMetrics {
+    #[getter]
+    fn tenant_id(&self) -> PyTenantId {
+        PyTenantId {
+            inner: self.inner.tenant_id.clone(),
+        }
+    }
+    
+    #[getter]
+    fn total_save_operations(&self) -> u64 {
+        self.inner.total_save_operations
+    }
+    
+    #[getter]
+    fn total_load_operations(&self) -> u64 {
+        self.inner.total_load_operations
+    }
+    
+    #[getter]
+    fn total_events_saved(&self) -> u64 {
+        self.inner.total_events_saved
+    }
+    
+    #[getter]
+    fn total_events_loaded(&self) -> u64 {
+        self.inner.total_events_loaded
+    }
+    
+    #[getter]
+    fn successful_saves(&self) -> u64 {
+        self.inner.successful_saves
+    }
+    
+    #[getter]
+    fn successful_loads(&self) -> u64 {
+        self.inner.successful_loads
+    }
+    
+    #[getter]
+    fn average_save_time_ms(&self) -> f64 {
+        self.inner.average_save_time_ms
+    }
+    
+    #[getter]
+    fn average_load_time_ms(&self) -> f64 {
+        self.inner.average_load_time_ms
+    }
+    
+    #[getter]
+    fn max_save_time_ms(&self) -> f64 {
+        self.inner.max_save_time_ms
+    }
+    
+    #[getter]
+    fn max_load_time_ms(&self) -> f64 {
+        self.inner.max_load_time_ms
+    }
+    
+    #[getter]
+    fn last_operation(&self) -> Option<String> {
+        self.inner.last_operation.map(|dt| dt.to_rfc3339())
+    }
+    
+    #[getter]
+    fn operations_by_type(&self) -> HashMap<String, u64> {
+        self.inner.operations_by_type.clone()
+    }
+    
+    fn save_success_rate(&self) -> f64 {
+        self.inner.save_success_rate()
+    }
+    
+    fn load_success_rate(&self) -> f64 {
+        self.inner.load_success_rate()
+    }
+    
+    fn is_performance_target_met(&self) -> bool {
+        self.inner.is_performance_target_met()
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "TenantStorageMetrics(saves={}, loads={}, save_success_rate={:.1}%, load_success_rate={:.1}%)",
+            self.inner.total_save_operations,
+            self.inner.total_load_operations,
+            self.inner.save_success_rate(),
+            self.inner.load_success_rate()
+        )
     }
 }

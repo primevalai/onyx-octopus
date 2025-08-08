@@ -10,8 +10,10 @@ pub mod tenant;
 pub mod isolation;
 pub mod quota;
 pub mod manager;
+pub mod storage;
 
 pub use tenant::{TenantId, TenantInfo, TenantConfig, TenantMetadata, ResourceLimits};
 pub use isolation::{TenantIsolation, IsolatedEventStore, TenantScope};
 pub use quota::{TenantQuota, ResourceTracker, QuotaExceeded};
 pub use manager::{TenantManager, TenantOperations, TenantRegistry};
+pub use storage::{TenantAwareEventStorage, TenantStorageMetrics, TenantEventBatch};
