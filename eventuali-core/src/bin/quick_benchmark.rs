@@ -33,14 +33,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let creation_duration = start.elapsed();
     let events_per_sec = 10000.0 / creation_duration.as_secs_f64();
-    println!("✓ Created 10,000 events in {:?} ({:.0} events/sec)", creation_duration, events_per_sec);
+    println!("✓ Created 10,000 events in {creation_duration:?} ({events_per_sec:.0} events/sec)");
 
     println!("\n💾 SQLite Bulk Save Benchmark");
     let start = Instant::now();
     store.save_events(events.clone()).await?;
     let save_duration = start.elapsed();
     let save_events_per_sec = 10000.0 / save_duration.as_secs_f64();
-    println!("✓ Saved 10,000 events in {:?} ({:.0} events/sec)", save_duration, save_events_per_sec);
+    println!("✓ Saved 10,000 events in {save_duration:?} ({save_events_per_sec:.0} events/sec)");
 
     println!("\n📖 SQLite Load Benchmark");
     let start = Instant::now();
@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }))?;
         
         let event = Event::new(
-            format!("stream-{}", i),
+            format!("stream-{i}"),
             "Stream".to_string(),
             "StreamEvent".to_string(),
             1,
@@ -74,13 +74,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let streaming_duration = start.elapsed();
     let streaming_events_per_sec = 1000.0 / streaming_duration.as_secs_f64();
-    println!("✓ Streamed 1,000 events in {:?} ({:.0} events/sec)", streaming_duration, streaming_events_per_sec);
+    println!("✓ Streamed 1,000 events in {streaming_duration:?} ({streaming_events_per_sec:.0} events/sec)");
 
     println!("\n📈 Performance Summary");
     println!("======================");
-    println!("Event Creation: {:.0} events/sec", events_per_sec);
-    println!("SQLite Save:    {:.0} events/sec", save_events_per_sec);
-    println!("Event Streaming: {:.0} events/sec", streaming_events_per_sec);
+    println!("Event Creation: {events_per_sec:.0} events/sec");
+    println!("SQLite Save:    {save_events_per_sec:.0} events/sec");
+    println!("Event Streaming: {streaming_events_per_sec:.0} events/sec");
     
     // Estimate vs pure Python (conservatively assuming pure Python at ~1000 events/sec for save operations)
     let python_baseline = 1000.0;
@@ -88,8 +88,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let streaming_speedup = streaming_events_per_sec / python_baseline;
     
     println!("\n🎯 Performance vs Pure Python (estimated):");
-    println!("SQLite Save Speedup: {:.1}x", save_speedup);
-    println!("Streaming Speedup: {:.1}x", streaming_speedup);
+    println!("SQLite Save Speedup: {save_speedup:.1}x");
+    println!("Streaming Speedup: {streaming_speedup:.1}x");
     
     if save_speedup >= 10.0 && streaming_speedup >= 10.0 {
         println!("✅ PERFORMANCE TARGET ACHIEVED: 10-60x improvement validated!");

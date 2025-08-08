@@ -484,6 +484,10 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
                     create_task = progress.add_task("Creating events...", total=target_eps * bench_duration)
                     
                     while time.time() - start_time < bench_duration:
+                        # Check time limit every iteration to prevent infinite loops
+                        if time.time() - start_time >= bench_duration:
+                            break
+                            
                         user_id = f"bench-user-{uuid.uuid4().hex[:8]}"
                         user = User(id=user_id)
                         # Register user using event application
@@ -499,7 +503,7 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
                         if events_created % 100 == 0:
                             progress.advance(create_task, 100)
                         
-                        # Add small delay to prevent excessive CPU usage and allow time checking
+                        # Mandatory delay every 10 events to prevent infinite loops and allow time checking
                         if events_created % 10 == 0:
                             await asyncio.sleep(0.001)  # 1ms delay every 10 events
                 
@@ -600,11 +604,18 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
                     load_task = progress.add_task("Loading aggregates...", total=len(test_users) * 2)
                     
                     while time.time() - start_time < bench_duration and loaded_count < len(test_users) * 10:
+                        # Check time limit every iteration to prevent infinite loops
+                        if time.time() - start_time >= bench_duration:
+                            break
+                            
                         user_id = test_users[loaded_count % len(test_users)]
                         loaded_user = await event_store.load(User, user_id)
                         if loaded_user:
                             loaded_count += 1
                         progress.advance(load_task, min(1, len(test_users) * 2 - progress.tasks[0].completed))
+                        
+                        # Mandatory delay to prevent infinite loops and allow time checking
+                        await asyncio.sleep(0.001)  # 1ms delay per operation
                 
                 actual_duration = time.time() - start_time
                 load_eps = loaded_count / actual_duration
