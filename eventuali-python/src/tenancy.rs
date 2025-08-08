@@ -5,7 +5,16 @@ use eventuali_core::tenancy::{
     TenantId as CoreTenantId, TenantInfo as CoreTenantInfo, TenantConfig as CoreTenantConfig,
     TenantMetadata as CoreTenantMetadata, ResourceLimits as CoreResourceLimits,
     TenantManager as CoreTenantManager, TenantAwareEventStorage as CoreTenantAwareEventStorage,
-    TenantStorageMetrics as CoreTenantStorageMetrics, TenantEventBatch as CoreTenantEventBatch
+    TenantStorageMetrics as CoreTenantStorageMetrics, TenantEventBatch as CoreTenantEventBatch,
+    ResourceType as CoreResourceType, QuotaTier as CoreQuotaTier, QuotaCheckResult as CoreQuotaCheckResult,
+    EnhancedResourceUsage as CoreEnhancedResourceUsage, QuotaAlert as CoreQuotaAlert,
+    AlertType as CoreAlertType, BillingAnalytics as CoreBillingAnalytics, UsageTrends as CoreUsageTrends,
+    TenantConfigurationManager as CoreTenantConfigurationManager, ConfigurationValue as CoreConfigurationValue,
+    ConfigurationSchema as CoreConfigurationSchema, ConfigurationEntry as CoreConfigurationEntry,
+    ConfigurationEnvironment as CoreConfigurationEnvironment, ConfigurationMetrics as CoreConfigurationMetrics,
+    TenantMetricsCollector as CoreTenantMetricsCollector, MetricDataPoint as CoreMetricDataPoint,
+    TenantHealthScore as CoreTenantHealthScore, HealthStatus as CoreHealthStatus,
+    MetricAlert as CoreMetricAlert, SlaResult as CoreSlaResult
 };
 use crate::error::map_rust_error_to_python;
 use std::collections::HashMap;
@@ -580,5 +589,928 @@ impl PyTenantStorageMetrics {
             self.inner.save_success_rate(),
             self.inner.load_success_rate()
         )
+    }
+}
+
+/// Python wrapper for QuotaTier
+#[pyclass(name = "QuotaTier")]
+#[derive(Clone)]
+pub struct PyQuotaTier {
+    inner: CoreQuotaTier,
+}
+
+#[pymethods]
+impl PyQuotaTier {
+    #[new]
+    fn new(tier: String) -> PyResult<Self> {
+        let tier = match tier.as_str() {
+            "starter" => CoreQuotaTier::Starter,
+            "standard" => CoreQuotaTier::Standard,
+            "professional" => CoreQuotaTier::Professional,
+            "enterprise" => CoreQuotaTier::Enterprise,
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid quota tier: {}", tier))),
+        };
+        
+        Ok(Self { inner: tier })
+    }
+    
+    #[classmethod]
+    fn starter(_cls: &PyType) -> Self {
+        Self { inner: CoreQuotaTier::Starter }
+    }
+    
+    #[classmethod]
+    fn standard(_cls: &PyType) -> Self {
+        Self { inner: CoreQuotaTier::Standard }
+    }
+    
+    #[classmethod]
+    fn professional(_cls: &PyType) -> Self {
+        Self { inner: CoreQuotaTier::Professional }
+    }
+    
+    #[classmethod]
+    fn enterprise(_cls: &PyType) -> Self {
+        Self { inner: CoreQuotaTier::Enterprise }
+    }
+    
+    fn __str__(&self) -> String {
+        match self.inner {
+            CoreQuotaTier::Starter => "starter".to_string(),
+            CoreQuotaTier::Standard => "standard".to_string(),
+            CoreQuotaTier::Professional => "professional".to_string(),
+            CoreQuotaTier::Enterprise => "enterprise".to_string(),
+        }
+    }
+    
+    fn __repr__(&self) -> String {
+        format!("QuotaTier('{}')", self.__str__())
+    }
+}
+
+/// Python wrapper for AlertType
+#[pyclass(name = "AlertType")]
+#[derive(Clone)]
+pub struct PyAlertType {
+    inner: CoreAlertType,
+}
+
+#[pymethods]
+impl PyAlertType {
+    #[new]
+    fn new(alert_type: String) -> PyResult<Self> {
+        let alert_type = match alert_type.as_str() {
+            "warning" => CoreAlertType::Warning,
+            "critical" => CoreAlertType::Critical,
+            "exceeded" => CoreAlertType::Exceeded,
+            "violation" => CoreAlertType::Violation,
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid alert type: {}", alert_type))),
+        };
+        
+        Ok(Self { inner: alert_type })
+    }
+    
+    fn __str__(&self) -> String {
+        match self.inner {
+            CoreAlertType::Warning => "warning".to_string(),
+            CoreAlertType::Critical => "critical".to_string(),
+            CoreAlertType::Exceeded => "exceeded".to_string(),
+            CoreAlertType::Violation => "violation".to_string(),
+        }
+    }
+}
+
+/// Python wrapper for QuotaCheckResult
+#[pyclass(name = "QuotaCheckResult")]
+#[derive(Clone)]
+pub struct PyQuotaCheckResult {
+    inner: CoreQuotaCheckResult,
+}
+
+#[pymethods]
+impl PyQuotaCheckResult {
+    #[getter]
+    fn allowed(&self) -> bool {
+        self.inner.allowed
+    }
+    
+    #[getter]
+    fn current_usage(&self) -> u64 {
+        self.inner.current_usage
+    }
+    
+    #[getter]
+    fn limit(&self) -> Option<u64> {
+        self.inner.limit
+    }
+    
+    #[getter]
+    fn utilization_percentage(&self) -> f64 {
+        self.inner.utilization_percentage
+    }
+    
+    #[getter]
+    fn grace_period_active(&self) -> bool {
+        self.inner.grace_period_active
+    }
+    
+    #[getter]
+    fn warning_triggered(&self) -> bool {
+        self.inner.warning_triggered
+    }
+    
+    #[getter]
+    fn estimated_overage_cost(&self) -> f64 {
+        self.inner.estimated_overage_cost
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "QuotaCheckResult(allowed={}, utilization={:.1}%, overage_cost=${:.4})",
+            self.inner.allowed,
+            self.inner.utilization_percentage,
+            self.inner.estimated_overage_cost
+        )
+    }
+}
+
+/// Python wrapper for QuotaAlert
+#[pyclass(name = "QuotaAlert")]
+#[derive(Clone)]
+pub struct PyQuotaAlert {
+    inner: CoreQuotaAlert,
+}
+
+#[pymethods]
+impl PyQuotaAlert {
+    #[getter]
+    fn tenant_id(&self) -> PyTenantId {
+        PyTenantId { inner: self.inner.tenant_id.clone() }
+    }
+    
+    #[getter]
+    fn resource_type(&self) -> String {
+        format!("{:?}", self.inner.resource_type).to_lowercase()
+    }
+    
+    #[getter]
+    fn alert_type(&self) -> PyAlertType {
+        PyAlertType { inner: self.inner.alert_type.clone() }
+    }
+    
+    #[getter]
+    fn current_usage(&self) -> u64 {
+        self.inner.current_usage
+    }
+    
+    #[getter]
+    fn limit(&self) -> u64 {
+        self.inner.limit
+    }
+    
+    #[getter]
+    fn utilization_percentage(&self) -> f64 {
+        self.inner.utilization_percentage
+    }
+    
+    #[getter]
+    fn message(&self) -> String {
+        self.inner.message.clone()
+    }
+    
+    #[getter]
+    fn timestamp(&self) -> String {
+        self.inner.timestamp.to_rfc3339()
+    }
+    
+    #[getter]
+    fn acknowledged(&self) -> bool {
+        self.inner.acknowledged
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "QuotaAlert({} - {} at {:.1}%: {})",
+            self.alert_type().__str__(),
+            self.resource_type(),
+            self.inner.utilization_percentage,
+            self.inner.message
+        )
+    }
+}
+
+/// Python wrapper for BillingAnalytics
+#[pyclass(name = "BillingAnalytics")]
+#[derive(Clone)]
+pub struct PyBillingAnalytics {
+    inner: CoreBillingAnalytics,
+}
+
+#[pymethods]
+impl PyBillingAnalytics {
+    #[getter]
+    fn tenant_id(&self) -> PyTenantId {
+        PyTenantId { inner: self.inner.tenant_id.clone() }
+    }
+    
+    #[getter]
+    fn current_month_cost(&self) -> f64 {
+        self.inner.current_month_cost
+    }
+    
+    #[getter]
+    fn projected_month_cost(&self) -> f64 {
+        self.inner.projected_month_cost
+    }
+    
+    #[getter]
+    fn billing_period_start(&self) -> String {
+        self.inner.billing_period_start.to_rfc3339()
+    }
+    
+    #[getter]
+    fn billing_period_end(&self) -> String {
+        self.inner.billing_period_end.to_rfc3339()
+    }
+    
+    #[getter]
+    fn overage_costs(&self) -> Py<PyDict> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (resource_type, cost) in &self.inner.overage_costs {
+                let _ = dict.set_item(format!("{:?}", resource_type).to_lowercase(), cost);
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    #[getter]
+    fn cost_breakdown(&self) -> Py<PyDict> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (resource_type, cost) in &self.inner.cost_breakdown {
+                let _ = dict.set_item(format!("{:?}", resource_type).to_lowercase(), cost);
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "BillingAnalytics(current=${:.2}, projected=${:.2}, overage_total=${:.2})",
+            self.inner.current_month_cost,
+            self.inner.projected_month_cost,
+            self.inner.overage_costs.values().sum::<f64>()
+        )
+    }
+}
+
+/// Python wrapper for EnhancedResourceUsage
+#[pyclass(name = "EnhancedResourceUsage")]
+#[derive(Clone)]
+pub struct PyEnhancedResourceUsage {
+    inner: CoreEnhancedResourceUsage,
+}
+
+#[pymethods]
+impl PyEnhancedResourceUsage {
+    #[getter]
+    fn tenant_id(&self) -> PyTenantId {
+        PyTenantId { inner: self.inner.tenant_id.clone() }
+    }
+    
+    #[getter]
+    fn tier(&self) -> PyQuotaTier {
+        PyQuotaTier { inner: self.inner.tier.clone() }
+    }
+    
+    #[getter]
+    fn daily_events(&self) -> u64 {
+        self.inner.daily_events
+    }
+    
+    #[getter]
+    fn storage_used_mb(&self) -> f64 {
+        self.inner.storage_used_mb
+    }
+    
+    #[getter]
+    fn concurrent_streams(&self) -> u32 {
+        self.inner.concurrent_streams
+    }
+    
+    #[getter]
+    fn total_projections(&self) -> u32 {
+        self.inner.total_projections
+    }
+    
+    #[getter]
+    fn total_aggregates(&self) -> u64 {
+        self.inner.total_aggregates
+    }
+    
+    #[getter]
+    fn api_calls_today(&self) -> u64 {
+        self.inner.api_calls_today
+    }
+    
+    #[getter]
+    fn performance_score(&self) -> f64 {
+        self.inner.performance_score
+    }
+    
+    #[getter]
+    fn last_updated(&self) -> String {
+        self.inner.last_updated.to_rfc3339()
+    }
+    
+    #[getter]
+    fn resource_limits(&self) -> PyResourceLimits {
+        PyResourceLimits { inner: self.inner.limits.clone() }
+    }
+    
+    #[getter]
+    fn billing_analytics(&self) -> PyBillingAnalytics {
+        PyBillingAnalytics { inner: self.inner.cost_analytics.clone() }
+    }
+    
+    fn utilization_percentage(&self, resource_type: String) -> Option<f64> {
+        let resource_type = match resource_type.as_str() {
+            "events" => CoreResourceType::Events,
+            "storage" => CoreResourceType::Storage,
+            "streams" => CoreResourceType::Streams,
+            "projections" => CoreResourceType::Projections,
+            "aggregates" => CoreResourceType::Aggregates,
+            "api_calls" => CoreResourceType::ApiCalls,
+            _ => return None,
+        };
+        
+        self.inner.utilization_percentage(resource_type)
+    }
+    
+    fn has_resources_near_limit(&self) -> bool {
+        self.inner.has_resources_near_limit()
+    }
+    
+    fn get_alert_summary(&self) -> Py<PyDict> {
+        let alert_summary = &self.inner.alert_summary;
+        
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            let _ = dict.set_item("total_alerts", alert_summary.total_alerts);
+            let _ = dict.set_item("unacknowledged_alerts", alert_summary.unacknowledged_alerts);
+            let _ = dict.set_item("critical_alerts", alert_summary.critical_alerts);
+            let _ = dict.set_item("warning_alerts", alert_summary.warning_alerts);
+            if let Some(last_alert) = alert_summary.last_alert {
+                let _ = dict.set_item("last_alert", last_alert.to_rfc3339());
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "EnhancedResourceUsage(tier={}, events={}, storage={:.1}MB, score={:.1})",
+            self.tier().__str__(),
+            self.inner.daily_events,
+            self.inner.storage_used_mb,
+            self.inner.performance_score
+        )
+    }
+}
+
+/// Python wrapper for ConfigurationEnvironment
+#[pyclass(name = "ConfigurationEnvironment")]
+#[derive(Clone)]
+pub struct PyConfigurationEnvironment {
+    inner: CoreConfigurationEnvironment,
+}
+
+#[pymethods]
+impl PyConfigurationEnvironment {
+    #[new]
+    fn new(env: String) -> PyResult<Self> {
+        let environment = match env.as_str() {
+            "development" => CoreConfigurationEnvironment::Development,
+            "staging" => CoreConfigurationEnvironment::Staging,
+            "production" => CoreConfigurationEnvironment::Production,
+            "testing" => CoreConfigurationEnvironment::Testing,
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid environment: {}", env))),
+        };
+        
+        Ok(Self { inner: environment })
+    }
+    
+    #[classmethod]
+    fn development(_cls: &PyType) -> Self {
+        Self { inner: CoreConfigurationEnvironment::Development }
+    }
+    
+    #[classmethod]
+    fn staging(_cls: &PyType) -> Self {
+        Self { inner: CoreConfigurationEnvironment::Staging }
+    }
+    
+    #[classmethod]
+    fn production(_cls: &PyType) -> Self {
+        Self { inner: CoreConfigurationEnvironment::Production }
+    }
+    
+    #[classmethod]
+    fn testing(_cls: &PyType) -> Self {
+        Self { inner: CoreConfigurationEnvironment::Testing }
+    }
+    
+    fn __str__(&self) -> String {
+        match self.inner {
+            CoreConfigurationEnvironment::Development => "development".to_string(),
+            CoreConfigurationEnvironment::Staging => "staging".to_string(),
+            CoreConfigurationEnvironment::Production => "production".to_string(),
+            CoreConfigurationEnvironment::Testing => "testing".to_string(),
+        }
+    }
+}
+
+/// Python wrapper for ConfigurationValue
+#[pyclass(name = "ConfigurationValue")]
+#[derive(Clone)]
+pub struct PyConfigurationValue {
+    inner: CoreConfigurationValue,
+}
+
+#[pymethods]
+impl PyConfigurationValue {
+    #[staticmethod]
+    fn string(value: String) -> Self {
+        Self {
+            inner: CoreConfigurationValue::String(value)
+        }
+    }
+    
+    #[staticmethod]
+    fn integer(value: i64) -> Self {
+        Self {
+            inner: CoreConfigurationValue::Integer(value)
+        }
+    }
+    
+    #[staticmethod]
+    fn float(value: f64) -> Self {
+        Self {
+            inner: CoreConfigurationValue::Float(value)
+        }
+    }
+    
+    #[staticmethod]
+    fn boolean(value: bool) -> Self {
+        Self {
+            inner: CoreConfigurationValue::Boolean(value)
+        }
+    }
+    
+    fn to_json(&self) -> PyResult<String> {
+        let json_value = self.inner.to_json();
+        serde_json::to_string(&json_value)
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON serialization error: {}", e)))
+    }
+    
+    #[staticmethod]
+    fn from_json(json_str: &str) -> PyResult<Self> {
+        let json_value: serde_json::Value = serde_json::from_str(json_str)
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {}", e)))?;
+        
+        Ok(Self {
+            inner: CoreConfigurationValue::from_json(&json_value)
+        })
+    }
+    
+    fn __str__(&self) -> String {
+        format!("{:?}", self.inner)
+    }
+}
+
+/// Python wrapper for TenantConfigurationManager
+#[pyclass(name = "TenantConfigurationManager")]
+pub struct PyTenantConfigurationManager {
+    inner: CoreTenantConfigurationManager,
+}
+
+#[pymethods]
+impl PyTenantConfigurationManager {
+    #[new]
+    fn new(tenant_id: PyTenantId) -> Self {
+        Self {
+            inner: CoreTenantConfigurationManager::new(tenant_id.inner)
+        }
+    }
+    
+    fn set_configuration(
+        &self,
+        key: String,
+        value: PyConfigurationValue,
+        environment: Option<PyConfigurationEnvironment>,
+        changed_by: String,
+        change_reason: String,
+    ) -> PyResult<()> {
+        // Create a basic string schema for simplicity
+        let schema = CoreConfigurationSchema::String {
+            min_length: None,
+            max_length: None,
+            pattern: None,
+        };
+        
+        let env = environment.map(|e| e.inner);
+        
+        self.inner.set_configuration(
+            key,
+            value.inner,
+            schema,
+            env,
+            changed_by,
+            change_reason,
+        ).map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {}", e)))
+    }
+    
+    fn get_configuration(
+        &self,
+        key: &str,
+        environment: Option<PyConfigurationEnvironment>,
+    ) -> Option<PyConfigurationValue> {
+        let env = environment.map(|e| e.inner);
+        self.inner.get_configuration(key, env)
+            .map(|value| PyConfigurationValue { inner: value })
+    }
+    
+    fn get_all_configurations(
+        &self,
+        environment: Option<PyConfigurationEnvironment>,
+    ) -> Py<PyDict> {
+        let env = environment.map(|e| e.inner);
+        let configs = self.inner.get_all_configurations(env);
+        
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (key, value) in configs {
+                let py_value = PyConfigurationValue { inner: value };
+                let _ = dict.set_item(key, Py::new(py, py_value).unwrap());
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    fn delete_configuration(
+        &self,
+        key: &str,
+        environment: Option<PyConfigurationEnvironment>,
+        changed_by: String,
+        change_reason: String,
+    ) -> PyResult<bool> {
+        let env = environment.map(|e| e.inner);
+        self.inner.delete_configuration(key, env, changed_by, change_reason)
+            .map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {}", e)))
+    }
+    
+    fn export_configurations(
+        &self,
+        environment: Option<PyConfigurationEnvironment>,
+    ) -> String {
+        let env = environment.map(|e| e.inner);
+        let export = self.inner.export_configurations(env);
+        export.to_string()
+    }
+    
+    fn import_configurations(
+        &self,
+        json_data: &str,
+        environment: PyConfigurationEnvironment,
+        changed_by: String,
+    ) -> PyResult<usize> {
+        let json_value: serde_json::Value = serde_json::from_str(json_data)
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {}", e)))?;
+        
+        self.inner.import_configurations(&json_value, environment.inner, changed_by)
+            .map_err(|e| PyRuntimeError::new_err(format!("Import error: {}", e)))
+    }
+    
+    fn get_metrics(&self) -> Py<PyDict> {
+        let metrics = self.inner.get_metrics();
+        
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            let _ = dict.set_item("tenant_id", metrics.tenant_id.as_str());
+            let _ = dict.set_item("total_configurations", metrics.total_configurations);
+            let _ = dict.set_item("total_changes_today", metrics.total_changes_today);
+            let _ = dict.set_item("cache_hit_rate", metrics.cache_hit_rate);
+            let _ = dict.set_item("average_retrieval_time_ms", metrics.average_retrieval_time_ms);
+            
+            if let Some(last_change) = metrics.last_change_timestamp {
+                let _ = dict.set_item("last_change_timestamp", last_change.to_rfc3339());
+            }
+            
+            dict.into_py(py)
+        })
+    }
+    
+    fn set_environment(&mut self, environment: PyConfigurationEnvironment) {
+        self.inner.set_environment(environment.inner);
+    }
+    
+    fn set_hot_reload_enabled(&mut self, enabled: bool) {
+        self.inner.set_hot_reload_enabled(enabled);
+    }
+    
+    fn set_validation_enabled(&mut self, enabled: bool) {
+        self.inner.set_validation_enabled(enabled);
+    }
+}
+
+/// Python wrapper for HealthStatus
+#[pyclass(name = "HealthStatus")]
+#[derive(Clone)]
+pub struct PyHealthStatus {
+    inner: CoreHealthStatus,
+}
+
+#[pymethods]
+impl PyHealthStatus {
+    fn __str__(&self) -> String {
+        match self.inner {
+            CoreHealthStatus::Excellent => "excellent".to_string(),
+            CoreHealthStatus::Good => "good".to_string(),
+            CoreHealthStatus::Fair => "fair".to_string(),
+            CoreHealthStatus::Poor => "poor".to_string(),
+            CoreHealthStatus::Critical => "critical".to_string(),
+        }
+    }
+    
+    fn __repr__(&self) -> String {
+        format!("HealthStatus('{}')", self.__str__())
+    }
+}
+
+/// Python wrapper for TenantHealthScore
+#[pyclass(name = "TenantHealthScore")]
+#[derive(Clone)]
+pub struct PyTenantHealthScore {
+    inner: CoreTenantHealthScore,
+}
+
+#[pymethods]
+impl PyTenantHealthScore {
+    #[getter]
+    fn overall_score(&self) -> f64 {
+        self.inner.overall_score
+    }
+    
+    #[getter]
+    fn status(&self) -> PyHealthStatus {
+        PyHealthStatus { inner: self.inner.status.clone() }
+    }
+    
+    #[getter]
+    fn component_scores(&self) -> Py<PyDict> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (component, score) in &self.inner.component_scores {
+                let _ = dict.set_item(component, *score);
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    #[getter]
+    fn active_alerts_count(&self) -> usize {
+        self.inner.active_alerts_count
+    }
+    
+    #[getter]
+    fn critical_alerts_count(&self) -> usize {
+        self.inner.critical_alerts_count
+    }
+    
+    #[getter]
+    fn calculated_at(&self) -> String {
+        self.inner.calculated_at.to_rfc3339()
+    }
+    
+    #[getter]
+    fn recommendations(&self) -> Vec<String> {
+        self.inner.recommendations.clone()
+    }
+    
+    fn __str__(&self) -> String {
+        format!(
+            "TenantHealthScore(score={:.1}, status={}, alerts={}, critical={})",
+            self.inner.overall_score,
+            match self.inner.status {
+                CoreHealthStatus::Excellent => "excellent",
+                CoreHealthStatus::Good => "good",
+                CoreHealthStatus::Fair => "fair",
+                CoreHealthStatus::Poor => "poor",
+                CoreHealthStatus::Critical => "critical",
+            },
+            self.inner.active_alerts_count,
+            self.inner.critical_alerts_count
+        )
+    }
+}
+
+/// Python wrapper for MetricDataPoint
+#[pyclass(name = "MetricDataPoint")]
+#[derive(Clone)]
+pub struct PyMetricDataPoint {
+    inner: CoreMetricDataPoint,
+}
+
+#[pymethods]
+impl PyMetricDataPoint {
+    #[new]
+    fn new(value: f64) -> Self {
+        Self {
+            inner: CoreMetricDataPoint::new(value)
+        }
+    }
+    
+    fn with_label(mut self, key: String, value: String) -> Self {
+        self.inner = self.inner.with_label(key, value);
+        self
+    }
+    
+    #[getter]
+    fn timestamp(&self) -> String {
+        self.inner.timestamp.to_rfc3339()
+    }
+    
+    #[getter]
+    fn value(&self) -> f64 {
+        self.inner.value
+    }
+    
+    #[getter]
+    fn labels(&self) -> Py<PyDict> {
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (key, value) in &self.inner.labels {
+                let _ = dict.set_item(key, value);
+            }
+            dict.into_py(py)
+        })
+    }
+}
+
+/// Python wrapper for TenantMetricsCollector
+#[pyclass(name = "TenantMetricsCollector")]
+pub struct PyTenantMetricsCollector {
+    inner: CoreTenantMetricsCollector,
+}
+
+#[pymethods]
+impl PyTenantMetricsCollector {
+    #[new]
+    fn new(tenant_id: PyTenantId) -> Self {
+        Self {
+            inner: CoreTenantMetricsCollector::new(tenant_id.inner)
+        }
+    }
+    
+    fn record_metric(
+        &self,
+        name: String,
+        value: f64,
+        labels: Option<Py<PyDict>>,
+    ) -> PyResult<()> {
+        let labels_map = if let Some(labels_py) = labels {
+            Python::with_gil(|py| {
+                let mut map = HashMap::new();
+                let dict = labels_py.as_ref(py);
+                
+                for item in dict.items() {
+                    let (key, value) = item.extract::<(String, String)>()?;
+                    map.insert(key, value);
+                }
+                
+                Ok::<HashMap<String, String>, PyErr>(map)
+            })?
+        } else {
+            HashMap::new()
+        };
+        
+        let labels_opt = if labels_map.is_empty() {
+            None
+        } else {
+            Some(labels_map)
+        };
+        
+        self.inner.record_metric(name, value, labels_opt);
+        Ok(())
+    }
+    
+    fn record_metrics(&self, metrics: Vec<(String, f64)>) -> PyResult<()> {
+        let metrics_with_labels: Vec<(String, f64, Option<HashMap<String, String>>)> = 
+            metrics.into_iter()
+                .map(|(name, value)| (name, value, None))
+                .collect();
+        
+        self.inner.record_metrics(metrics_with_labels);
+        Ok(())
+    }
+    
+    fn get_current_metric_value(&self, name: &str) -> Option<f64> {
+        self.inner.get_current_metric_value(name)
+    }
+    
+    fn get_metric_timeseries(
+        &self,
+        name: &str,
+        start: Option<String>,
+        end: Option<String>,
+    ) -> PyResult<Vec<PyMetricDataPoint>> {
+        let start_time = if let Some(start_str) = start {
+            Some(chrono::DateTime::parse_from_rfc3339(&start_str)
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {}", e)))?
+                .with_timezone(&chrono::Utc))
+        } else {
+            None
+        };
+        
+        let end_time = if let Some(end_str) = end {
+            Some(chrono::DateTime::parse_from_rfc3339(&end_str)
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {}", e)))?
+                .with_timezone(&chrono::Utc))
+        } else {
+            None
+        };
+        
+        if let Some(timeseries) = self.inner.get_metric_timeseries(name, start_time, end_time) {
+            Ok(timeseries.into_iter()
+                .map(|point| PyMetricDataPoint { inner: point })
+                .collect())
+        } else {
+            Ok(Vec::new())
+        }
+    }
+    
+    fn detect_anomalies(&self, threshold_multiplier: f64) -> Py<PyDict> {
+        let anomalies = self.inner.detect_anomalies(threshold_multiplier);
+        
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (metric_name, points) in anomalies {
+                let py_points: Vec<Py<PyMetricDataPoint>> = points.into_iter()
+                    .map(|point| Py::new(py, PyMetricDataPoint { inner: point }).unwrap())
+                    .collect();
+                let _ = dict.set_item(metric_name, py_points);
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    fn get_usage_patterns(&self) -> Py<PyDict> {
+        let patterns = self.inner.get_usage_patterns();
+        
+        Python::with_gil(|py| {
+            let dict = PyDict::new(py);
+            for (metric_name, pattern) in patterns {
+                let pattern_str = match pattern {
+                    eventuali_core::tenancy::quota::UsagePattern::Stable => "stable",
+                    eventuali_core::tenancy::quota::UsagePattern::Growing => "growing",
+                    eventuali_core::tenancy::quota::UsagePattern::Declining => "declining",
+                    eventuali_core::tenancy::quota::UsagePattern::Volatile => "volatile",
+                    eventuali_core::tenancy::quota::UsagePattern::Seasonal => "seasonal",
+                };
+                let _ = dict.set_item(metric_name, pattern_str);
+            }
+            dict.into_py(py)
+        })
+    }
+    
+    fn calculate_health_score(&self) -> PyTenantHealthScore {
+        PyTenantHealthScore {
+            inner: self.inner.calculate_health_score()
+        }
+    }
+    
+    fn export_metrics(&self, format: String, time_range: Option<(String, String)>) -> PyResult<String> {
+        let export_format = match format.as_str() {
+            "json" => eventuali_core::tenancy::metrics::ExportFormat::Json,
+            "csv" => eventuali_core::tenancy::metrics::ExportFormat::Csv,
+            "prometheus" => eventuali_core::tenancy::metrics::ExportFormat::Prometheus,
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid export format: {}", format))),
+        };
+        
+        let time_range_parsed = if let Some((start_str, end_str)) = time_range {
+            let start = chrono::DateTime::parse_from_rfc3339(&start_str)
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {}", e)))?
+                .with_timezone(&chrono::Utc);
+            let end = chrono::DateTime::parse_from_rfc3339(&end_str)
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {}", e)))?
+                .with_timezone(&chrono::Utc);
+            Some((start, end))
+        } else {
+            None
+        };
+        
+        self.inner.export_metrics(export_format, time_range_parsed)
+            .map_err(|e| PyRuntimeError::new_err(format!("Export error: {}", e)))
     }
 }

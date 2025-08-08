@@ -12,13 +12,29 @@ pub mod quota;
 pub mod manager;
 pub mod storage;
 pub mod projections;
+pub mod configuration;
+pub mod metrics;
 
 pub use tenant::{TenantId, TenantInfo, TenantConfig, TenantMetadata, ResourceLimits};
 pub use isolation::{TenantIsolation, IsolatedEventStore, TenantScope};
-pub use quota::{TenantQuota, ResourceTracker, QuotaExceeded};
+pub use quota::{
+    TenantQuota, ResourceType, QuotaTier, QuotaCheckResult, 
+    QuotaExceeded, EnhancedResourceUsage, ResourceUsage,
+    QuotaAlert, AlertType, BillingAnalytics, UsageTrends
+};
 pub use manager::{TenantManager, TenantOperations, TenantRegistry};
 pub use storage::{TenantAwareEventStorage, TenantStorageMetrics, TenantEventBatch};
 pub use projections::{
     TenantScopedProjection, TenantProjectionManager, TenantProjectionRegistry, 
     TenantProjectionMetrics
+};
+pub use configuration::{
+    TenantConfigurationManager, ConfigurationValue, ConfigurationSchema, 
+    ConfigurationEntry, ConfigurationTemplate, ConfigurationEnvironment,
+    ConfigurationChangeEvent, ConfigurationMetrics
+};
+pub use metrics::{
+    TenantMetricsCollector, MetricDataPoint, TimeSeriesMetric, AggregatedMetric,
+    SlaDefinition, SlaResult, MetricAlert, MetricAlertRule, TenantDashboard,
+    DashboardWidget, TenantHealthScore, HealthStatus, ExportFormat
 };
