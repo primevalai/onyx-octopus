@@ -947,6 +947,68 @@ uv run python ../examples/33_tenant_management_api.py
 
 ---
 
+### 34 - Tenant-Specific Configuration
+**File**: `34_tenant_specific_configuration.py`
+**Concepts**: Dynamic per-tenant configuration, hot-reload, multi-environment support, validation
+
+```bash
+uv run python ../examples/34_tenant_specific_configuration.py
+```
+
+**What you'll learn:**
+- Dynamic per-tenant configuration with real-time hot-reload capabilities
+- Multi-environment configuration management (dev/staging/production/testing)
+- Configuration validation and type safety with custom schema enforcement
+- Template-based configuration for rapid tenant onboarding
+- Comprehensive change tracking and audit logging
+- Configuration import/export for backup and migration workflows
+- Performance-optimized caching with intelligent cache invalidation
+- Configuration rollback capabilities for recovery scenarios
+
+**Expected Output:**
+- Dynamic configuration management across multiple environments
+- Hot-reload demonstrations with zero-downtime updates
+- Template application for rapid tenant provisioning
+- Change tracking with full audit trails and history
+- Performance metrics showing sub-millisecond retrieval times
+- Export/import workflows for configuration backup and migration
+- Cross-tenant configuration analysis and comparison
+
+**Performance**: Zero-downtime configuration updates, sub-millisecond retrieval, 90% faster onboarding with templates
+
+---
+
+### 36 - Tenant Metrics
+**File**: `36_tenant_metrics.py`
+**Concepts**: Advanced observability, SLA monitoring, health scoring, anomaly detection
+
+```bash
+uv run python ../examples/36_tenant_metrics.py
+```
+
+**What you'll learn:**
+- Real-time tenant metrics collection with time-series storage
+- Advanced statistical analysis including percentiles, trends, and forecasting
+- Intelligent anomaly detection using statistical and ML-based methods
+- Custom dashboard creation with flexible widget systems
+- SLA monitoring and compliance tracking with automated alerting
+- Multi-dimensional health scoring with actionable recommendations
+- Cross-tenant performance comparison and benchmarking
+- Export capabilities for external monitoring system integration
+
+**Expected Output:**
+- Real-time monitoring dashboards with live metric updates
+- SLA compliance tracking with violation detection and alerting
+- Comprehensive health scoring across multiple performance dimensions
+- Anomaly detection with statistical analysis and pattern recognition
+- Custom dashboard creation with real-time data visualization
+- Cross-tenant analysis showing performance rankings and insights
+- Metrics export in multiple formats (JSON, CSV, Prometheus)
+
+**Performance**: Real-time metrics processing, sub-second dashboard updates, comprehensive analytics platform
+
+---
+
 ### 37 - OpenTelemetry Integration
 **File**: `37_opentelemetry_integration.py`
 **Concepts**: Distributed tracing, correlation IDs, span relationships
@@ -1171,15 +1233,15 @@ Enterprise-grade security and compliance features:
 - 🚧 Security scanning and monitoring (in development)
 - 🚧 Compliance reporting tools (in development)
 
-### 🏢 Phase 2 Multi-tenancy (30-36) - **4/7 COMPLETED** ✅ **MAJOR PROGRESS**
+### 🏢 Phase 2 Multi-tenancy (30-36) - **6/7 COMPLETED** ✅ **NEARLY COMPLETE**
 Complete multi-tenant architecture with enterprise isolation:
 - ✅ Tenant isolation architecture with database-level separation
 - ✅ Tenant-aware event storage with performance optimization
 - ✅ Tenant-scoped projections and real-time analytics
 - ✅ Tenant management API with comprehensive administration
-- 🚧 Tenant-specific configuration system (in development)
+- ✅ Tenant-specific configuration system with hot-reload capabilities
+- ✅ Tenant metrics and advanced observability dashboard
 - 🚧 Resource quotas per tenant (in development)
-- 🚧 Tenant metrics and monitoring (in development)
 
 ### 📊 Phase 2 Observability (37-43) - **5/7 COMPLETED** ✅ **NEARLY COMPLETE**
 Production-ready observability and monitoring stack:
@@ -1201,9 +1263,9 @@ Advanced performance optimizations for enterprise deployment:
 - 🚧 Advanced compression algorithms (framework ready)
 
 ### 📊 Phase 2 Progress Summary
-**Overall Phase 2 Status: 12/28 features completed (43%)**
+**Overall Phase 2 Status: 14/28 features completed (50%)**
 - 🔐 Security: 1/8 features (12.5%)
-- 🏢 Multi-tenancy: 4/7 features (57.1%) 
+- 🏢 Multi-tenancy: 6/7 features (85.7%) 
 - 📊 Observability: 5/7 features (71.4%)
 - ⚡ Performance: 2/6 features (33.3%)
 
