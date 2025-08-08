@@ -410,6 +410,12 @@ uv tool install patchelf
 # Build Python bindings
 uv run maturin develop
 
+# Test CLI functionality (now available)
+uv run eventuali --help
+uv run eventuali config --list
+uv run eventuali init --database-url "sqlite://:memory:" --force
+uv run eventuali query --limit 5
+
 # Quick start examples (basic)
 uv run python ../examples/01_basic_event_store_simple.py     # Basic event sourcing
 uv run python ../examples/02_aggregate_lifecycle.py         # Complex aggregates

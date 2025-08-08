@@ -12,7 +12,15 @@ uv sync
 uv run maturin develop
 ```
 
-The `eventuali` command will be available in your environment.
+The `eventuali` command will be available via UV. Test it:
+
+```bash
+# Test the CLI is working
+uv run eventuali --help
+uv run eventuali config --list
+```
+
+**Important**: Always use `uv run eventuali` (not just `eventuali`) to ensure you're using the correct environment.
 
 ## Basic Usage
 
