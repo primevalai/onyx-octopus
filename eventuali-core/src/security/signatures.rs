@@ -1,4 +1,4 @@
-use crate::{Event, EventData, EventualiError, Result};
+use crate::{Event, EventualiError, Result};
 use base64::{Engine as _, engine::general_purpose};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
