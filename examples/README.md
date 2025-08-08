@@ -2,6 +2,38 @@
 
 This directory contains comprehensive examples demonstrating Eventuali's event sourcing capabilities, from basic concepts to advanced patterns. All examples use **UV** for Python dependency management and execution.
 
+## 📖 Example Index
+
+### 📚 Basic Examples (01-04)
+- **[01 - Basic Event Store Simple](#01---basic-event-store-simple)** - Event persistence, aggregate reconstruction
+- **[02 - Aggregate Lifecycle](#02---aggregate-lifecycle)** - Complex business logic, state transitions
+- **[03 - Error Handling](#03---error-handling)** - Domain exceptions, validation patterns
+- **[04 - Performance Testing](#04---performance-testing)** - Benchmarking, throughput measurement
+
+### 🔄 Intermediate Examples (05-08)
+- **[05 - Multi-Aggregate Coordination](#05---multi-aggregate-coordination)** - Cross-aggregate workflows
+- **[06 - Event Versioning](#06---event-versioning)** - Schema evolution, backward compatibility
+- **[07 - Saga Patterns](#07---saga-patterns)** - Distributed transactions, orchestration
+- **[08 - Projections](#08---projections)** - Read models, real-time analytics
+
+### 🚀 Advanced Examples (09-16)
+- **[09 - CQRS Patterns](#09---cqrs-patterns)** - Command-Query separation, read models
+- **[10 - Event Replay](#10---event-replay)** - Historical state reconstruction, time travel
+- **[11 - Distributed Events](#11---distributed-events)** - Multi-node coordination, consensus
+- **[12 - Microservices Integration](#12---microservices-integration)** - Service boundaries, coordination
+- **[13 - Real-time Dashboards](#13---real-time-dashboards)** - Live data visualization, streaming
+- **[14 - Production Monitoring](#14---production-monitoring)** - Health checks, SLA monitoring
+- **[15 - Advanced Patterns](#15---advanced-patterns)** - Event versioning, snapshots, temporal queries
+- **[16 - Enterprise Features](#16---enterprise-features)** - Security, compliance, HA/DR
+
+### 🔧 CLI Examples (17-20)
+- **[17 - CLI Basic Operations](#17---cli-basic-operations)** - CLI fundamentals, configuration management
+- **[18 - CLI Database Management](#18---cli-database-management)** - Database workflows, migrations
+- **[19 - CLI Performance Monitoring](#19---cli-performance-monitoring)** - Performance analysis via CLI
+- **[20 - CLI Production Workflow](#20---cli-production-workflow)** - End-to-end production deployment
+
+---
+
 ## Prerequisites
 
 Before running any examples, ensure you have the development environment set up:
@@ -646,6 +678,121 @@ uv run python ../examples/example_name.py
 
 ---
 
+## CLI Examples
+
+### 17 - CLI Basic Operations
+**File**: `17_cli_basic_operations.py`
+**Concepts**: CLI fundamentals, configuration management, workflow integration
+
+```bash
+uv run python ../examples/17_cli_basic_operations.py
+```
+
+**What you'll learn:**
+- CLI help system and command discovery
+- Configuration management and persistent storage
+- Database initialization with different backends
+- Event querying and inspection workflows
+- Schema migration operations
+- Error handling and validation patterns
+- Development workflow integration
+
+**Expected Output:**
+- Comprehensive CLI command demonstrations
+- Configuration management workflows
+- Database initialization and migration
+- Event querying with different output formats
+- Error handling and recovery examples
+- Complete development workflow patterns
+
+**Performance**: Demonstrates CLI functionality with comprehensive deprecation warnings and improvement roadmap
+
+---
+
+### 18 - CLI Database Management
+**File**: `18_cli_database_management.py`
+**Concepts**: Advanced database workflows, multi-environment management
+
+```bash
+uv run python ../examples/18_cli_database_management.py
+```
+
+**What you'll learn:**
+- Multi-backend database support (SQLite, PostgreSQL)
+- Schema migration workflows and versioning
+- Database health monitoring and validation
+- Multi-environment configuration management
+- Backup and recovery simulation patterns
+- Database performance monitoring via CLI
+
+**Expected Output:**
+- Database backend compatibility testing
+- Migration workflows with version management
+- Health check and validation systems
+- Multi-environment deployment patterns
+- Backup/recovery simulation (100% success rate)
+- Performance monitoring and optimization
+
+**Performance**: Production-ready database management with 100% success rate on core workflows
+
+---
+
+### 19 - CLI Performance Monitoring
+**File**: `19_cli_performance_monitoring.py`
+**Concepts**: Performance analysis, resource monitoring, benchmarking
+
+```bash
+uv run python ../examples/19_cli_performance_monitoring.py
+```
+
+**What you'll learn:**
+- CLI performance baseline establishment
+- Benchmark command analysis with timeout protection
+- Query performance scaling analysis
+- Configuration system performance testing
+- Resource usage monitoring patterns
+- Performance bottleneck identification
+
+**Expected Output:**
+- Baseline performance measurements for CLI operations
+- Benchmark command analysis (with known infinite loop protection)
+- Query scaling performance across different limit sizes
+- Configuration access performance metrics
+- Resource usage monitoring (with fallback for missing psutil)
+- Critical findings and performance improvement recommendations
+
+**Performance**: CLI performance analysis with timeout protection and known limitations documentation
+
+---
+
+### 20 - CLI Production Workflow
+**File**: `20_cli_production_workflow.py`  
+**Concepts**: End-to-end production deployment, health monitoring, disaster recovery
+
+```bash
+uv run python ../examples/20_cli_production_workflow.py
+```
+
+**What you'll learn:**
+- Complete production deployment pipeline automation
+- Health monitoring and system status checking
+- Disaster recovery procedures and validation
+- Multi-environment deployment strategies
+- Production readiness assessment patterns
+- BFB improvement identification and prioritization
+
+**Expected Output:**
+- End-to-end deployment pipeline simulation
+- Health monitoring with comprehensive status checks
+- Disaster recovery workflow demonstrations
+- Multi-environment deployment coordination
+- Production readiness assessment with detailed findings
+- Comprehensive BFB improvement roadmap with 17 specific improvements
+
+**Performance**: Production workflow simulation with comprehensive assessment and improvement roadmap
+
+---
+
 ## Example Categories Summary
 
 ### 📚 Basic Examples (01-04) - **4/4 COMPLETED**
@@ -673,16 +820,23 @@ Enterprise-grade patterns and distributed system architectures:
 - Advanced patterns: snapshots, temporal queries, multi-tenancy
 - Enterprise features: security, compliance, HA/DR, business intelligence
 
+### 🔧 CLI Examples (17-20) - **4/4 COMPLETED**
+Comprehensive CLI system demonstration with production workflow patterns:
+- CLI basic operations with comprehensive functionality testing
+- Advanced database management with multi-backend support
+- Performance monitoring with resource usage analysis
+- Production workflow automation with deployment pipeline patterns
+
 ### Future Expansion Areas
 
 **Cloud Integration (Planned)**:
-- **17 - AWS Integration**: EventBridge, Lambda, RDS optimization
-- **18 - Azure Integration**: Event Hubs, Functions, Cosmos DB
-- **19 - GCP Integration**: Pub/Sub, Cloud Functions, Firestore
+- **21 - AWS Integration**: EventBridge, Lambda, RDS optimization
+- **22 - Azure Integration**: Event Hubs, Functions, Cosmos DB
+- **23 - GCP Integration**: Pub/Sub, Cloud Functions, Firestore
 
 **Message Broker Integration (Planned)**:
-- **20 - Kafka Integration**: Native streaming with Schema Registry
-- **21 - RabbitMQ Integration**: AMQP patterns and routing
-- **22 - Redis Streams**: Lightweight streaming patterns
+- **24 - Kafka Integration**: Native streaming with Schema Registry
+- **25 - RabbitMQ Integration**: AMQP patterns and routing
+- **26 - Redis Streams**: Lightweight streaming patterns
 
 *This README is maintained automatically as new examples are added to ensure current and accurate instructions.*

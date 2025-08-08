@@ -199,6 +199,38 @@ Benchmarks show significant performance improvements over pure Python event sour
 
 This section provides comprehensive examples demonstrating Eventuali's capabilities, from basic event sourcing concepts to high-performance streaming.
 
+### 📖 Quick Example Navigation
+
+#### 📚 Basic Examples (01-04) - Learn the Fundamentals
+- **[01 - Basic Event Store Simple](examples/01_basic_event_store_simple.py)** - Event persistence, aggregate reconstruction
+- **[02 - Aggregate Lifecycle](examples/02_aggregate_lifecycle.py)** - Complex business logic, state transitions  
+- **[03 - Error Handling](examples/03_error_handling.py)** - Domain exceptions, validation patterns
+- **[04 - Performance Testing](examples/04_performance_testing.py)** - Benchmarking (64k+ events/sec)
+
+#### 🔄 Intermediate Examples (05-08) - Production Patterns
+- **[05 - Multi-Aggregate Coordination](examples/05_multi_aggregate_simple.py)** - Cross-aggregate workflows
+- **[06 - Event Versioning](examples/06_event_versioning.py)** - Schema evolution, backward compatibility
+- **[07 - Saga Patterns](examples/07_saga_patterns.py)** - Distributed transactions (~214ms avg)
+- **[08 - Projections](examples/08_projections.py)** - Real-time analytics (78k+ events/sec)
+
+#### 🚀 Advanced Examples (09-16) - Enterprise Scale
+- **[09 - CQRS Patterns](examples/09_cqrs_patterns.py)** - Command-Query separation, multiple read models
+- **[10 - Event Replay](examples/10_event_replay.py)** - Historical state reconstruction, time travel
+- **[11 - Distributed Events](examples/11_distributed_events.py)** - Multi-node coordination, 100% availability
+- **[12 - Microservices Integration](examples/12_microservices_integration.py)** - 4 services, event-driven communication
+- **[13 - Real-time Dashboards](examples/13_realtime_dashboards.py)** - Live data visualization, streaming updates
+- **[14 - Production Monitoring](examples/14_production_monitoring.py)** - Health checks, SLA monitoring (99.9% uptime)
+- **[15 - Advanced Patterns](examples/15_advanced_patterns.py)** - Snapshots, temporal queries, multi-tenancy
+- **[16 - Enterprise Features](examples/16_enterprise_features.py)** - Security, compliance, HA/DR
+
+#### 🔧 CLI Examples (17-20) - Production Tooling
+- **[17 - CLI Basic Operations](examples/17_cli_basic_operations.py)** - CLI fundamentals, configuration management
+- **[18 - CLI Database Management](examples/18_cli_database_management.py)** - Database workflows, migrations (100% success)
+- **[19 - CLI Performance Monitoring](examples/19_cli_performance_monitoring.py)** - Performance analysis via CLI
+- **[20 - CLI Production Workflow](examples/20_cli_production_workflow.py)** - End-to-end production deployment
+
+📋 **[Complete Examples Documentation →](examples/README.md)** - Detailed guides, expected outputs, and performance metrics
+
 ### Prerequisites
 
 Before running examples, ensure you have the required dependencies:
@@ -378,15 +410,33 @@ uv tool install patchelf
 # Build Python bindings
 uv run maturin develop
 
-# Run examples (8 comprehensive examples)
+# Quick start examples (basic)
 uv run python ../examples/01_basic_event_store_simple.py     # Basic event sourcing
 uv run python ../examples/02_aggregate_lifecycle.py         # Complex aggregates
 uv run python ../examples/03_error_handling.py              # Error patterns
-uv run python ../examples/04_performance_testing.py         # Performance benchmarks
+uv run python ../examples/04_performance_testing.py         # Performance benchmarks (64k+ events/sec)
+
+# Production patterns (intermediate)
 uv run python ../examples/05_multi_aggregate_simple.py      # Multi-aggregate coordination
 uv run python ../examples/06_event_versioning.py            # Schema evolution
-uv run python ../examples/07_saga_patterns.py               # Distributed transactions
-uv run python ../examples/08_projections.py                 # Real-time projections
+uv run python ../examples/07_saga_patterns.py               # Distributed transactions (~214ms avg)
+uv run python ../examples/08_projections.py                 # Real-time projections (78k+ events/sec)
+
+# Enterprise scale (advanced)
+uv run python ../examples/09_cqrs_patterns.py               # CQRS with multiple read models
+uv run python ../examples/10_event_replay.py                # Historical state reconstruction
+uv run python ../examples/11_distributed_events.py          # Multi-node coordination (100% availability)
+uv run python ../examples/12_microservices_integration.py   # 4-service event-driven architecture
+uv run python ../examples/13_realtime_dashboards.py         # Live streaming dashboards
+uv run python ../examples/14_production_monitoring.py       # Health checks, SLA monitoring (99.9% uptime)
+uv run python ../examples/15_advanced_patterns.py           # Snapshots, temporal queries, multi-tenancy
+uv run python ../examples/16_enterprise_features.py         # Security, compliance, HA/DR
+
+# CLI tooling examples
+uv run python ../examples/17_cli_basic_operations.py        # CLI fundamentals
+uv run python ../examples/18_cli_database_management.py     # Database workflows (100% success)
+uv run python ../examples/19_cli_performance_monitoring.py  # CLI performance analysis
+uv run python ../examples/20_cli_production_workflow.py     # Production deployment pipeline
 
 # Run tests
 uv run pytest tests/ -v
