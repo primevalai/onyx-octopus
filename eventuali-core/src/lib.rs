@@ -5,6 +5,7 @@ pub mod error;
 pub mod proto;
 pub mod streaming;
 pub mod snapshot;
+pub mod security;
 
 pub use event::{Event, EventData, EventId, EventMetadata};
 pub use aggregate::{Aggregate, AggregateId, AggregateVersion};
@@ -19,6 +20,9 @@ pub use streaming::{
 pub use snapshot::{
     AggregateSnapshot, SnapshotStore, SnapshotService, SnapshotConfig, SnapshotCompression,
     SnapshotMetadata, SqliteSnapshotStore
+};
+pub use security::{
+    EventEncryption, KeyManager, EncryptionKey, EncryptedEventData, EncryptionAlgorithm
 };
 
 // Re-export specific backend implementations

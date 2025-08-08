@@ -7,12 +7,14 @@ mod aggregate;
 mod error;
 mod streaming;
 mod snapshot;
+mod security;
 
 use event_store::PyEventStore;
 use event::PyEvent;
 use aggregate::PyAggregate;
 use streaming::{PyEventStreamer, PyEventStreamReceiver, PySubscriptionBuilder, PyProjection};
 use snapshot::{PySnapshotService, PySnapshotConfig, PyAggregateSnapshot};
+use security::{PyEventEncryption, PyKeyManager, PyEncryptionKey, PyEncryptedEventData, PyEncryptionAlgorithm, PySecurityUtils};
 
 #[pymodule]
 fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
@@ -30,6 +32,14 @@ fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PySnapshotService>()?;
     m.add_class::<PySnapshotConfig>()?;
     m.add_class::<PyAggregateSnapshot>()?;
+    
+    // Register security classes
+    m.add_class::<PyEventEncryption>()?;
+    m.add_class::<PyKeyManager>()?;
+    m.add_class::<PyEncryptionKey>()?;
+    m.add_class::<PyEncryptedEventData>()?;
+    m.add_class::<PyEncryptionAlgorithm>()?;
+    m.add_class::<PySecurityUtils>()?;
     
     // Register custom exceptions
     error::register_exceptions(py, m)?;

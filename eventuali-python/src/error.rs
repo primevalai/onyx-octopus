@@ -32,6 +32,9 @@ pub fn map_rust_error_to_python(error: CoreError) -> PyErr {
         CoreError::Io(e) => {
             PyErr::new::<exceptions::PyIOError, _>(format!("IO error: {}", e))
         }
+        CoreError::Encryption(msg) => {
+            PyErr::new::<exceptions::PyRuntimeError, _>(format!("Encryption error: {}", msg))
+        }
     }
 }
 

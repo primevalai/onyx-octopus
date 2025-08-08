@@ -27,4 +27,7 @@ pub enum EventualiError {
     
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+    
+    #[error("Encryption error: {0}")]
+    Encryption(String),
 }

@@ -11,7 +11,14 @@ from ._eventuali import (
     PyAggregate as _PyAggregate,
     SnapshotService as _PySnapshotService,
     SnapshotConfig as _PySnapshotConfig,
-    AggregateSnapshot as _PyAggregateSnapshot
+    AggregateSnapshot as _PyAggregateSnapshot,
+    # Security classes
+    EventEncryption,
+    KeyManager,
+    EncryptionKey,
+    EncryptedEventData,
+    EncryptionAlgorithm,
+    SecurityUtils
 )
 from .event_store import EventStore
 from .event import Event  
@@ -43,6 +50,13 @@ __all__ = [
     "SnapshotService",
     "SnapshotConfig",
     "AggregateSnapshot",
+    # Security
+    "EventEncryption",
+    "KeyManager", 
+    "EncryptionKey",
+    "EncryptedEventData",
+    "EncryptionAlgorithm",
+    "SecurityUtils",
     # Exceptions
     "EventualiError",
     "OptimisticConcurrencyError",
