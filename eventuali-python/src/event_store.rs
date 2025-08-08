@@ -33,8 +33,28 @@ impl PyEventStore {
             let config = if connection_string.starts_with("postgresql://") || connection_string.starts_with("postgres://") {
                 EventStoreConfig::postgres(connection_string)
             } else if connection_string.starts_with("sqlite://") {
-                let path = connection_string.strip_prefix("sqlite://").unwrap_or(&connection_string);
-                EventStoreConfig::sqlite(path.to_string())
+                // Parse SQLite URLs properly
+                let path = if connection_string.starts_with("sqlite://:memory:") {
+                    // sqlite://:memory: format - in-memory database
+                    ":memory:".to_string()
+                } else if connection_string.starts_with("sqlite:///") {
+                    // sqlite:///path format - after ///
+                    let path_part = &connection_string[10..];  // Remove 'sqlite:///'
+                    if path_part.starts_with('/') {
+                        // Absolute path like sqlite:////absolute/path
+                        path_part.to_string()
+                    } else {
+                        // Relative path like sqlite:///relative/path - use as-is
+                        path_part.to_string()
+                    }
+                } else if connection_string.starts_with("sqlite://") {
+                    // sqlite://path format - relative path after //
+                    connection_string[9..].to_string()  // Remove 'sqlite://'
+                } else {
+                    // Fallback - treat as relative path
+                    connection_string.to_string()
+                };
+                EventStoreConfig::sqlite(path)
             } else {
                 return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
                     format!("Unsupported connection string format: {}", connection_string)

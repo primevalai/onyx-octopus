@@ -6,7 +6,8 @@ use async_trait::async_trait;
 use base64::{Engine as _, engine::general_purpose};
 use chrono::{DateTime, Utc};
 use serde_json;
-use sqlx::{sqlite::SqlitePool, Row};
+use sqlx::{sqlite::{SqlitePool, SqliteConnectOptions, SqliteJournalMode}, Row};
+use std::str::FromStr;
 use uuid::Uuid;
 
 pub struct SQLiteBackend {
@@ -22,10 +23,47 @@ impl SQLiteBackend {
                 max_connections,
                 table_name,
             } => {
-                let pool = sqlx::sqlite::SqlitePoolOptions::new()
-                    .max_connections(max_connections.unwrap_or(10))
-                    .connect(database_path)
-                    .await?;
+                let pool = if database_path == ":memory:" {
+                    // For in-memory databases, use the simple connection string
+                    sqlx::sqlite::SqlitePoolOptions::new()
+                        .max_connections(max_connections.unwrap_or(10))
+                        .connect("sqlite://:memory:")
+                        .await?
+                } else {
+                    // For file-based SQLite, use SqliteConnectOptions with create_if_missing
+                    let path = std::path::Path::new(database_path);
+                    let full_path = if path.is_absolute() {
+                        database_path.clone()
+                    } else {
+                        // Convert relative path to absolute path
+                        std::env::current_dir()
+                            .map_err(|e| EventualiError::Configuration(format!("Cannot get current directory: {}", e)))?
+                            .join(path)
+                            .to_string_lossy()
+                            .to_string()
+                    };
+                    
+                    // Create parent directories if they don't exist
+                    let db_path = std::path::Path::new(&full_path);
+                    if let Some(parent) = db_path.parent() {
+                        if !parent.exists() {
+                            std::fs::create_dir_all(parent)
+                                .map_err(|e| EventualiError::Configuration(format!("Cannot create directory {}: {}", parent.display(), e)))?;
+                        }
+                    }
+                    
+                    
+                    // Use SqliteConnectOptions for proper file database creation
+                    let connect_options = SqliteConnectOptions::from_str(&full_path)
+                        .map_err(|e| EventualiError::Configuration(format!("Invalid SQLite path {}: {}", full_path, e)))?
+                        .create_if_missing(true)
+                        .journal_mode(SqliteJournalMode::Wal);
+                    
+                    sqlx::sqlite::SqlitePoolOptions::new()
+                        .max_connections(max_connections.unwrap_or(10))
+                        .connect_with(connect_options)
+                        .await?
+                };
 
                 let table_name = table_name
                     .as_deref()
@@ -42,12 +80,7 @@ impl SQLiteBackend {
     }
 
     async fn create_tables(&self) -> Result<()> {
-        // Enable WAL mode for better concurrency
-        sqlx::query("PRAGMA journal_mode = WAL")
-            .execute(&self.pool)
-            .await?;
-
-        // Enable foreign keys
+        // Enable foreign keys (WAL mode is set in connection options)
         sqlx::query("PRAGMA foreign_keys = ON")
             .execute(&self.pool)
             .await?;

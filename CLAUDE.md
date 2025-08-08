@@ -2,6 +2,30 @@
 
 This document provides essential context and development guidelines for working on the Eventuali project - a high-performance hybrid Python-Rust event sourcing library.
 
+## CRITICAL DEVELOPMENT RULES
+
+### 🚨 MANDATORY: UV-ONLY PYTHON DEVELOPMENT 🚨
+
+**ABSOLUTE REQUIREMENT**: ALL Python operations MUST use `uv`. NO EXCEPTIONS.
+
+**NEVER USE**:
+- ❌ `pip install`
+- ❌ `pip install -r requirements.txt`  
+- ❌ `python script.py`
+- ❌ `pytest`
+- ❌ `python -m module`
+- ❌ Virtual environment activation (`source venv/bin/activate`)
+
+**ALWAYS USE**:
+- ✅ `uv add package-name`
+- ✅ `uv sync` 
+- ✅ `uv run python script.py`
+- ✅ `uv run pytest`
+- ✅ `uv run module`
+- ✅ `uv tool install tool-name`
+
+**WHY THIS IS CRITICAL**: Using pip or direct Python breaks dependency consistency, bypasses performance optimizations, and causes integration failures with the Rust toolchain.
+
 ## Project Overview
 
 Eventuali combines Rust's performance and memory safety with Python's developer experience to create a powerful event sourcing library. The project achieves 10-60x performance improvements over pure Python implementations while maintaining a Pythonic API.
@@ -14,32 +38,36 @@ Eventuali combines Rust's performance and memory safety with Python's developer 
 
 ## Python Tooling - UV Only
 
+**🚨 CRITICAL REMINDER: UV ONLY - NO PIP/PYTHON DIRECT USAGE 🚨**
+
 **MANDATORY**: All Python development work in this project MUST use `uv` for dependency management, tool installation, and script execution.
+
+**⚠️ FORBIDDEN COMMANDS ⚠️**: Never use `pip`, `python script.py`, `pytest`, `python -m`, or any direct Python commands.
 
 ### Dependency Management
 ```bash
-# Install all dependencies (replaces pip install -r requirements.txt)
+# ✅ Install all dependencies (NEVER use: pip install -r requirements.txt)
 uv sync
 
-# Install with development extras
+# ✅ Install with development extras
 uv sync --all-extras
 
-# Add new runtime dependency
+# ✅ Add new runtime dependency (NEVER use: pip install package)
 uv add pydantic asyncio
 
-# Add development dependency  
+# ✅ Add development dependency (NEVER use: pip install --dev)
 uv add --dev pytest black ruff
 
-# Update dependencies
+# ✅ Update dependencies (NEVER use: pip install --upgrade)
 uv sync --upgrade
 ```
 
 ### Tool Installation
 ```bash
-# Install development tools (replaces pip install maturin)
+# ✅ Install development tools (NEVER use: pip install maturin)
 uv tool install maturin
 
-# Install multiple tools
+# ✅ Install multiple tools (NEVER use: pip install black ruff mypy)
 uv tool install black ruff mypy isort
 
 # List installed tools
@@ -51,17 +79,17 @@ uv tool uninstall maturin
 
 ### Running Scripts and Examples
 ```bash
-# Run Python scripts (replaces python script.py)
+# ✅ Run Python scripts (NEVER use: python script.py)
 uv run python examples/01_basic_event_store_simple.py
 uv run python examples/06_event_versioning.py
 
-# Run with specific Python version
+# ✅ Run with specific Python version
 uv run --python 3.11 python examples/performance_testing.py
 
-# Run tests (replaces pytest)
+# ✅ Run tests (NEVER use: pytest directly)
 uv run pytest eventuali-python/tests/ -v
 
-# Run development commands
+# ✅ Run development commands (NEVER use direct tool calls)
 uv run maturin develop --release
 uv run black --check eventuali-python/python/
 uv run ruff check eventuali-python/python/
@@ -86,6 +114,20 @@ uv run maturin develop --release
 uv run python examples/01_basic_event_store_simple.py
 ```
 
+## UV Command Quick Reference
+
+**🔄 COMMON COMMAND TRANSLATIONS**:
+```bash
+# OLD WAY (FORBIDDEN)        →  NEW WAY (REQUIRED)
+pip install package         →  uv add package
+pip install -r requirements →  uv sync
+python script.py           →  uv run python script.py
+pytest tests/              →  uv run pytest tests/
+python -m module           →  uv run python -m module
+pip install --dev tool     →  uv add --dev tool
+pip install --upgrade pkg  →  uv sync --upgrade
+```
+
 ### Why UV Only?
 
 - **Faster**: 10-100x faster dependency resolution than pip
@@ -94,6 +136,7 @@ uv run python examples/01_basic_event_store_simple.py
 - **Unified Tool**: Single tool for all Python operations
 - **Modern Standards**: Built for pyproject.toml and modern Python packaging
 - **Better Integration**: Works seamlessly with Rust tooling via maturin
+- **⚠️ CRITICAL**: Prevents dependency conflicts and build failures
 
 ## Development Commands Reference
 
@@ -102,16 +145,16 @@ uv run python examples/01_basic_event_store_simple.py
 # Build Rust core (for testing Rust components)
 cargo build --release --package eventuali-core
 
-# Build and install Python bindings
+# ✅ Build and install Python bindings (NEVER use: maturin develop directly)
 uv run maturin develop --release
 
 # Run Rust tests
 cargo test --package eventuali-core
 
-# Run Python tests
+# ✅ Run Python tests (NEVER use: pytest directly)
 uv run pytest eventuali-python/tests/ -v
 
-# Run all examples to verify functionality
+# ✅ Run all examples to verify functionality (NEVER use: python directly)
 uv run python examples/01_basic_event_store_simple.py
 uv run python examples/02_aggregate_lifecycle.py
 # ... continue for all examples
@@ -119,16 +162,16 @@ uv run python examples/02_aggregate_lifecycle.py
 
 ### Code Quality
 ```bash
-# Format Python code
+# ✅ Format Python code (NEVER use: black directly)
 uv run black eventuali-python/python/
 
-# Lint Python code
+# ✅ Lint Python code (NEVER use: ruff directly)
 uv run ruff check eventuali-python/python/
 
-# Type checking
+# ✅ Type checking (NEVER use: mypy directly)
 uv run mypy eventuali-python/python/
 
-# Sort imports
+# ✅ Sort imports (NEVER use: isort directly)
 uv run isort eventuali-python/python/
 ```
 
@@ -137,7 +180,7 @@ uv run isort eventuali-python/python/
 # Run Rust performance demo (showcases 10k+ events/sec)
 cargo run --package eventuali-core --example rust_streaming_demo
 
-# Run Python performance benchmark
+# ✅ Run Python performance benchmark (NEVER use: python directly)
 uv run python examples/04_performance_testing.py
 ```
 
@@ -173,8 +216,11 @@ When implementing new features, always follow the BFB pattern:
 3. **Build**: Verify the fix works and the example runs cleanly
 
 ### Example Creation Guidelines
+**🚨 UV-ONLY REQUIREMENT FOR ALL EXAMPLES 🚨**
+
 All new examples should:
-- Use UV syntax: `uv run python examples/example_name.py`
+- **MANDATORY**: Use UV syntax: `uv run python examples/example_name.py`
+- **FORBIDDEN**: Never use `python examples/example_name.py` directly
 - Include comprehensive docstrings explaining the patterns demonstrated
 - Follow the established naming convention: `##_descriptive_name.py`
 - Demonstrate both success and failure scenarios
@@ -183,9 +229,10 @@ All new examples should:
 
 ### Testing Requirements
 - All functionality must be tested with working examples
-- Examples should execute successfully with clear output
+- **UV REQUIREMENT**: Examples should execute successfully with `uv run python examples/file.py`
 - Performance examples should demonstrate the 10-60x improvement claims
 - Error handling examples should show proper exception handling
+- **NEVER**: Run examples with direct Python calls
 
 ## Troubleshooting
 
@@ -206,6 +253,7 @@ uv sync --upgrade
 - **Import errors**: Ensure `uv run maturin develop --release` has been run
 - **Permission errors**: Use `uv tool install` instead of global pip installs
 - **Environment issues**: UV manages environments automatically - don't activate venvs manually
+- **🚨 COMMAND ERRORS**: If you get "command not found" for Python tools, you forgot to use `uv run`
 
 ## Performance Expectations
 
@@ -216,6 +264,22 @@ The Eventuali library should demonstrate:
 - **Memory Usage**: 8-20x more efficient than pure Python
 - **Concurrent Throughput**: 2x better under load
 
+## Git Repository Management
+
+**IMPORTANT**: All git operations for remote repositories (push/pull) must use SSH, not HTTPS.
+
+```bash
+# Always use SSH for remote operations
+git remote set-url origin git@github.com:username/repository.git
+
+# Verify SSH is configured
+git remote -v
+
+# Standard workflow
+git push origin feature-branch  # Uses SSH
+git pull origin main           # Uses SSH
+```
+
 ## Links and Resources
 
 - **UV Documentation**: https://docs.astral.sh/uv/
@@ -225,4 +289,20 @@ The Eventuali library should demonstrate:
 
 ---
 
-**Remember**: Always use `uv` for all Python operations. No exceptions.
+## 🔒 FINAL CRITICAL REMINDER 🔒
+
+**ABSOLUTE RULE**: `uv` is MANDATORY for ALL Python operations. NO EXCEPTIONS.
+
+**❌ NEVER EVER USE**:
+- `pip install` or any pip command
+- `python script.py` (direct Python execution)
+- `pytest`, `black`, `ruff`, `mypy` (direct tool execution)
+- `python -m module` (direct module execution)
+
+**✅ ALWAYS USE**:
+- `uv add package` (for dependencies)
+- `uv run python script.py` (for Python scripts)
+- `uv run pytest` (for testing)
+- `uv run tool-name` (for tools)
+
+**This is not optional. This is not a preference. This is a hard requirement.**

@@ -22,3 +22,4 @@ uuid = { workspace = true }
 chrono = { workspace = true }
 anyhow = { workspace = true }
 pythonize = "0.20"
+sqlx = { workspace = true }
