@@ -427,8 +427,8 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
     """Run performance benchmarks against the event store."""
     config = ctx.obj['config']
     db_url = database_url or config.get('database_url', 'sqlite://:memory:')
-    bench_duration = duration or config.get('benchmark_duration', 10)
-    target_eps = events_per_second or config.get('benchmark_events_per_second', 1000)
+    bench_duration = duration or int(config.get('benchmark_duration', 10))
+    target_eps = events_per_second or int(config.get('benchmark_events_per_second', 1000))
     output_format = output or config.get('output_format', 'table')
     
     print_info(f"Running benchmarks against: {db_url}")
@@ -454,7 +454,7 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
                     BarColumn(),
                     TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
                 ) as progress:
-                    create_task = progress.add_task("Creating events...", total=bench_duration * 10)
+                    create_task = progress.add_task("Creating events...", total=target_eps * bench_duration)
                     
                     while time.time() - start_time < bench_duration:
                         user_id = f"bench-user-{uuid.uuid4().hex[:8]}"
@@ -470,14 +470,11 @@ def benchmark(ctx, duration, events_per_second, operations, output, database_url
                         events_created += 1
                         
                         if events_created % 100 == 0:
-                            progress.advance(create_task, 1)
+                            progress.advance(create_task, 100)
                         
-                        # Throttle to approximately target rate
-                        if events_created % target_eps == 0:
-                            elapsed = time.time() - start_time
-                            if elapsed < 1.0:
-                                await asyncio.sleep(1.0 - elapsed)
-                                start_time = time.time()
+                        # Add small delay to prevent excessive CPU usage and allow time checking
+                        if events_created % 10 == 0:
+                            await asyncio.sleep(0.001)  # 1ms delay every 10 events
                 
                 actual_duration = time.time() - start_time
                 create_eps = events_created / actual_duration
