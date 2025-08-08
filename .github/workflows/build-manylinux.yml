@@ -1,0 +1,86 @@
+name: Build manylinux wheels
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-manylinux:
+    name: Build manylinux wheels
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [x86_64, aarch64]
+        
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Protocol Buffers
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler
+
+    - name: Build wheels
+      uses: PyO3/maturin-action@v1
+      with:
+        target: ${{ matrix.target }}
+        args: --release --out dist --find-interpreter
+        sccache: 'true'
+        manylinux: auto
+        working-directory: ./eventuali-python
+
+    - name: Upload wheels
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-manylinux-${{ matrix.target }}
+        path: ./eventuali-python/dist
+
+  # Test wheels on different Python versions
+  test-manylinux:
+    name: Test manylinux wheels
+    needs: [build-manylinux]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.8', '3.9', '3.10', '3.11', '3.12']
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Download manylinux wheels
+      uses: actions/download-artifact@v4
+      with:
+        name: wheels-manylinux-x86_64
+        path: dist/
+
+    - name: Install UV
+      run: pip install uv
+
+    - name: Test wheel installation
+      run: |
+        uv venv test-env --python ${{ matrix.python-version }}
+        uv pip install dist/*.whl --python test-env
+        uv run --python test-env python -c "import eventuali; print('✓ Package imports successfully on Python ${{ matrix.python-version }}')"
+        
+    - name: Run basic functionality test
+      working-directory: ./eventuali-python
+      run: |
+        uv run --python test-env python -c "
+        import asyncio
+        from eventuali import EventStore
+        
+        async def test():
+            store = EventStore()
+            await store.create('sqlite://:memory:')
+            print('✓ Basic EventStore functionality works')
+        
+        asyncio.run(test())
+        "

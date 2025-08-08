@@ -1,0 +1,150 @@
+name: Build and Publish Eventuali
+
+on:
+  push:
+    branches: [ master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write  # IMPORTANT: mandatory for trusted publishing
+
+jobs:
+  # Build wheels for different platforms
+  build:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install Protocol Buffers (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler
+
+    - name: Install Protocol Buffers (macOS)
+      if: matrix.os == 'macos-latest'
+      run: brew install protobuf
+
+    - name: Install Protocol Buffers (Windows)
+      if: matrix.os == 'windows-latest'
+      run: |
+        choco install protoc
+        
+    - name: Install UV
+      run: pip install uv
+
+    - name: Install maturin
+      run: uv tool install maturin
+
+    - name: Build wheels
+      working-directory: ./eventuali-python
+      run: |
+        uv run maturin build --release --out dist
+        
+    - name: Test wheel installation
+      working-directory: ./eventuali-python
+      run: |
+        uv venv test-env
+        uv pip install dist/*.whl --python test-env
+        uv run --python test-env python -c "import eventuali; print('✓ Package imports successfully')"
+
+    - name: Upload wheels as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: wheels-${{ matrix.os }}
+        path: ./eventuali-python/dist
+
+  # Publish to TestPyPI on every push to master
+  publish-to-testpypi:
+    name: Publish to TestPyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/eventuali
+
+    steps:
+    - name: Download all wheels
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+        pattern: wheels-*
+        merge-multiple: true
+
+    - name: Publish to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: dist/
+
+  # Publish to PyPI on release tags
+  publish-to-pypi:
+    name: Publish to PyPI
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release' && github.event.action == 'published'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/eventuali
+
+    steps:
+    - name: Download all wheels
+      uses: actions/download-artifact@v4
+      with:
+        path: dist/
+        pattern: wheels-*
+        merge-multiple: true
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: dist/
+
+  # Build source distribution
+  build-sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install Protocol Buffers
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler
+
+    - name: Install UV and maturin
+      run: |
+        pip install uv
+        uv tool install maturin
+
+    - name: Build source distribution
+      working-directory: ./eventuali-python
+      run: uv run maturin sdist --out dist
+
+    - name: Upload sdist as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sdist
+        path: ./eventuali-python/dist

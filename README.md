@@ -1,6 +1,8 @@
-# Eventuali
-
-High-performance event sourcing library for Python, powered by Rust.
+<div align="center">
+  <img src="assets/onyx-octopus-avatar.png" alt="Graphite Gator" width="300">
+  
+  # Eventuali (Onyx Octopus): High-performance event sourcing library for Python, powered by Rust.
+</div>
 
 ## Why Eventuali?
 
