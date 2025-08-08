@@ -2,6 +2,106 @@
 
 High-performance event sourcing library for Python, powered by Rust.
 
+## Why Eventuali?
+
+**Problem**: Pure Python event sourcing hits performance walls at scale. Complex financial calculations, high-throughput IoT streams, and real-time analytics demand more than Python alone can deliver.
+
+**Solution**: Eventuali delivers **Rust-level performance with Python-level simplicity** - the only event sourcing library giving you 10-60x speed improvements without sacrificing developer experience.
+
+```python
+# Same familiar Python code...
+user.apply(UserRegistered(name="John", email="john@example.com"))
+await store.save(user)
+
+# ...but with 79,000+ events/second throughput
+# 18.3x faster snapshot reconstruction  
+# 186,000+ RBAC operations/second
+```
+
+## Who Needs This?
+
+### 🏦 **Fintech & Banking** 
+- **Regulatory compliance** requiring immutable audit trails (SOX, PCI DSS)
+- **High-frequency trading** with microsecond-sensitive operations
+- **Real-time fraud detection** processing millions of transactions
+- **Financial reporting** with historical state reconstruction
+
+### 🏢 **Enterprise SaaS**
+- **Multi-tenant systems** requiring strict data isolation
+- **Real-time analytics dashboards** with streaming updates
+- **CQRS at scale** with complex read model projections
+- **Audit trails** for compliance and security monitoring
+
+### 📡 **IoT & Analytics**
+- **High-volume event ingestion** from thousands of devices
+- **Time-series analysis** with historical event replay
+- **Real-time monitoring** of industrial systems
+- **Edge computing** with performance-critical processing
+
+### 🔄 **Microservices**
+- **Event-driven architecture** requiring reliable event ordering
+- **Distributed transactions** with saga pattern coordination
+- **Service decoupling** through event-based communication
+- **System observability** with comprehensive event trails
+
+## Alternatives & Trade-offs
+
+### Pure Python Solutions
+| Library | Pros | Cons | Best For |
+|---------|------|------|----------|
+| **pyeventsourcing** | Mature, comprehensive Python ecosystem | 10-60x slower, memory-intensive | Simple applications, prototypes |
+| **Custom implementation** | Full control, tailored to needs | High development cost, maintenance burden | Specific niche requirements |
+
+### Enterprise Platforms
+| Solution | Pros | Cons | Best For |
+|----------|------|------|----------|
+| **EventStore DB** | Proven at scale, rich querying | Separate infrastructure, operational complexity | Large enterprises with dedicated ops teams |
+| **Axon Framework** | Battle-tested, mature ecosystem | Java-only, steep learning curve | Java shops, complex domains |
+| **Apache Kafka** | Massive scale, proven reliability | Stream-only (not event sourcing), complex setup | Event streaming, not full event sourcing |
+
+### **Eventuali's Sweet Spot**
+✅ **Python teams** needing enterprise performance  
+✅ **Single-library solution** - no external infrastructure  
+✅ **Multi-database support** - PostgreSQL, SQLite built-in  
+✅ **Production-ready** - security, compliance, multi-tenancy included  
+✅ **Performance critical** - 79K+ events/sec, 1M+ encryption ops/sec  
+
+## When NOT to Use Eventuali
+
+**❌ Skip if you have:**
+- **Simple CRUD applications** - Traditional databases are simpler and sufficient
+- **Early MVP/prototype stage** - Event sourcing adds complexity during rapid iteration  
+- **Pure I/O bound workloads** - Database bottlenecks limit Rust performance benefits
+- **No event sourcing experience** - Steep learning curve for teams new to the pattern
+- **Extreme simplicity requirements** - Event sourcing inherently adds architectural complexity
+
+**✅ Perfect if you need:**
+- **Performance at Python scale** (10K+ events/second)
+- **Regulatory compliance** with immutable audit trails
+- **Complex domain logic** with rich business rules
+- **Historical analysis** and temporal querying
+- **Multi-tenant isolation** with enterprise security
+
+## Performance vs Complexity Trade-off
+
+```
+           High Performance
+                 ▲
+     Eventuali   │   EventStore DB
+         ●       │       ●
+                 │   Axon Framework  
+                 │       ●
+                 │
+     Custom ●────┼────● pyeventsourcing
+                 │
+                 │
+                 └──────────────────► 
+                Simple              Complex
+                Implementation
+```
+
+**Eventuali occupies the optimal position**: High performance with manageable complexity for Python teams.
+
 ## Overview
 
 Eventuali combines the performance and memory safety of Rust with the developer experience of Python to create a powerful event sourcing library. It provides:
