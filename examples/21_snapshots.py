@@ -19,7 +19,7 @@ Performance Benefits:
 • 60-80% storage reduction with compression
 • Configurable snapshot frequency and cleanup
 
-Usage: uv run python examples/21_snapshots.py
+Usage: cd eventuali-python && uv run python ../examples/21_snapshots.py
 """
 
 import asyncio
@@ -35,37 +35,8 @@ sys.path.insert(
     0, os.path.join(os.path.dirname(__file__), "..", "eventuali-python", "python")
 )
 
-try:
-    from eventuali import EventStore
-    from eventuali.snapshot import SnapshotService, SnapshotConfig, AggregateSnapshot
-    SNAPSHOTS_AVAILABLE = True
-except ImportError as e:
-    print(f"⚠️  Snapshot functionality not yet available: {e}")
-    print("📝 This is a demonstration of the snapshot API design")
-    SNAPSHOTS_AVAILABLE = False
-    
-    # Mock classes for demonstration
-    class SnapshotService:
-        def __init__(self, config): self.config = config
-        def initialize(self, db_path): pass
-        def create_snapshot(self, *args): 
-            return type('MockSnapshot', (), {
-                'aggregate_version': args[2], 'original_size': len(args[3]),
-                'compressed_size': int(len(args[3]) * 0.4), 'compression': 'gzip',
-                'checksum': 'mock_checksum_' + str(hash(args[3]))[:16],
-                'compression_ratio': 0.4, 'aggregate_id': args[0]
-            })()
-        def load_latest_snapshot(self, user_id): return None
-        def decompress_snapshot_data(self, snapshot): return b'{"mock": "data"}'
-        def should_take_snapshot(self, user_id, version): return version % 50 == 0
-        def cleanup_old_snapshots(self): return 0
-    
-    class SnapshotConfig:
-        def __init__(self, **kwargs):
-            self.snapshot_frequency = kwargs.get('snapshot_frequency', 50)
-            self.max_snapshot_age_hours = kwargs.get('max_snapshot_age_hours', 24)
-            self.compression = kwargs.get('compression', 'gzip')
-            self.auto_cleanup = kwargs.get('auto_cleanup', True)
+from eventuali import EventStore
+from eventuali.snapshot import SnapshotService, SnapshotConfig, AggregateSnapshot
 
 
 async def snapshot_performance_demo():
@@ -73,18 +44,13 @@ async def snapshot_performance_demo():
     print("🚀 Eventuali Snapshot Performance Demo")
     print("=" * 60)
     
-    if not SNAPSHOTS_AVAILABLE:
-        print("🔄 Running in DEMO MODE (snapshot features not yet implemented)")
-        print("   This shows the intended API and benefits of snapshots\n")
-    
     # Initialize services
     print("🔧 Initializing services...")
     db_file = tempfile.NamedTemporaryFile(delete=False)
     db_path = f"sqlite://{db_file.name}"
     
     # Create event store
-    if SNAPSHOTS_AVAILABLE:
-        event_store = await EventStore.create(db_path)
+    event_store = await EventStore.create(db_path)
     print(f"✅ Event store created: {db_path}")
     
     # Configure snapshot service
@@ -236,13 +202,6 @@ async def snapshot_performance_demo():
     print("  • Set max_snapshot_age_hours=168 (1 week) for cleanup") 
     print("  • Monitor compression ratios to optimize storage")
     print("  • Consider LZ4 compression for faster decompression")
-    
-    if not SNAPSHOTS_AVAILABLE:
-        print("\n🚧 Implementation Status:")
-        print("  • Rust snapshot core: ✅ Complete")
-        print("  • Python bindings: 🔄 In Progress")
-        print("  • Full integration: 📅 Coming Soon")
-        print("\n💡 This demo shows the intended snapshot API once fully implemented")
 
 
 async def main():

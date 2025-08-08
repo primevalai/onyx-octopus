@@ -800,6 +800,7 @@ uv run python ../examples/20_cli_production_workflow.py
 **File**: `21_snapshots.py`  
 **Concepts**: Aggregate snapshots, compression, performance optimization
 ```bash
+# Run from eventuali-python directory
 uv run python ../examples/21_snapshots.py
 ```
 **What you'll learn:**
