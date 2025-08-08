@@ -186,7 +186,7 @@ impl EventSigner {
     /// Serialize event to bytes for signing
     fn serialize_event(&self, event: &Event) -> Result<Vec<u8>> {
         serde_json::to_vec(event)
-            .map_err(|e| EventualiError::Serialization(e))
+            .map_err(EventualiError::Serialization)
     }
 
     /// Hash event data using SHA-256
@@ -202,7 +202,7 @@ impl EventSigner {
         type HmacSha256 = Hmac<Sha256>;
         
         let mut mac = HmacSha256::new_from_slice(key)
-            .map_err(|e| EventualiError::Configuration(format!("Invalid HMAC key: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Invalid HMAC key: {e}")))?;
         mac.update(data);
         Ok(mac.finalize().into_bytes().to_vec())
     }
@@ -214,7 +214,7 @@ impl EventSigner {
         type HmacSha512 = Hmac<Sha512>;
         
         let mut mac = HmacSha512::new_from_slice(key)
-            .map_err(|e| EventualiError::Configuration(format!("Invalid HMAC key: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Invalid HMAC key: {e}")))?;
         mac.update(data);
         Ok(mac.finalize().into_bytes().to_vec())
     }
@@ -295,7 +295,7 @@ impl SigningKeyManager {
     /// Get a key by ID
     pub fn get_key(&self, key_id: &str) -> Result<&SigningKey> {
         self.keys.get(key_id).ok_or_else(|| {
-            EventualiError::Configuration(format!("Signing key not found: {}", key_id))
+            EventualiError::Configuration(format!("Signing key not found: {key_id}"))
         })
     }
 
@@ -303,7 +303,7 @@ impl SigningKeyManager {
     pub fn set_default_key(&mut self, key_id: &str) -> Result<()> {
         if !self.keys.contains_key(key_id) {
             return Err(EventualiError::Configuration(
-                format!("Signing key not found: {}", key_id)
+                format!("Signing key not found: {key_id}")
             ));
         }
         self.default_key_id = key_id.to_string();
@@ -322,7 +322,7 @@ impl SigningKeyManager {
         // Use system time as seed for key generation
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| EventualiError::Configuration(format!("Time error: {}", e)))?
+            .map_err(|e| EventualiError::Configuration(format!("Time error: {e}")))?
             .as_nanos();
         
         // Generate key using multiple SHA-256 rounds for entropy
@@ -389,7 +389,7 @@ impl SignedEvent {
     pub fn from_base64(data: &str) -> Result<Self> {
         let bytes = general_purpose::STANDARD
             .decode(data)
-            .map_err(|e| EventualiError::Configuration(format!("Base64 decode error: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Base64 decode error: {e}")))?;
         
         serde_json::from_slice(&bytes)
             .map_err(EventualiError::from)
@@ -407,7 +407,7 @@ impl EventSignature {
     pub fn from_base64(data: &str) -> Result<Self> {
         let bytes = general_purpose::STANDARD
             .decode(data)
-            .map_err(|e| EventualiError::Configuration(format!("Base64 decode error: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Base64 decode error: {e}")))?;
         
         serde_json::from_slice(&bytes)
             .map_err(EventualiError::from)

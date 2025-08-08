@@ -35,10 +35,9 @@ import random
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 from eventuali import (
-    TenantId, EventStore, Event, EventData,
-    # When build succeeds, uncomment these:
-    # TenantConfigurationManager, ConfigurationValue, 
-    # ConfigurationEnvironment
+    TenantId, EventStore, Event,
+    TenantConfigurationManager, ConfigurationValue, 
+    ConfigurationEnvironment
 )
 
 def log_section(title: str):

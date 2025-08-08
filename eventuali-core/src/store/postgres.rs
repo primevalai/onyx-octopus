@@ -112,16 +112,16 @@ impl EventStoreBackend for PostgreSQLBackend {
             );
 
             sqlx::query(&query)
-                .bind(&event.id)
+                .bind(event.id)
                 .bind(&event.aggregate_id)
                 .bind(&event.aggregate_type)
                 .bind(&event.event_type)
-                .bind(&event.event_version)
-                .bind(&event.aggregate_version)
+                .bind(event.event_version)
+                .bind(event.aggregate_version)
                 .bind(&event_data_json)
                 .bind(event_data_type)
                 .bind(&metadata_json)
-                .bind(&event.timestamp)
+                .bind(event.timestamp)
                 .execute(&mut *tx)
                 .await
                 .map_err(|e| match e {
@@ -288,8 +288,7 @@ impl PostgreSQLBackend {
             }
             _ => {
                 return Err(EventualiError::InvalidEventData(format!(
-                    "Unknown event data type: {}",
-                    event_data_type
+                    "Unknown event data type: {event_data_type}"
                 )))
             }
         };

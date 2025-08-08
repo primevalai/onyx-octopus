@@ -15,6 +15,12 @@ pub struct TenantIsolation {
     performance_monitor: Arc<RwLock<IsolationMetrics>>,
 }
 
+impl Default for TenantIsolation {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TenantIsolation {
     pub fn new() -> Self {
         Self {
@@ -138,6 +144,12 @@ pub struct IsolationMetrics {
     pub max_validation_time_ms: f64,
     pub violations_detected: u64,
     pub last_updated: DateTime<Utc>,
+}
+
+impl Default for IsolationMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl IsolationMetrics {
@@ -325,6 +337,12 @@ pub struct TenantContext {
     pub operation_id: String,
     pub started_at: DateTime<Utc>,
     pub metadata: HashMap<String, String>,
+}
+
+impl Default for TenantContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TenantContext {

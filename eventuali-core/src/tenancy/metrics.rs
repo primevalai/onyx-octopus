@@ -10,12 +10,18 @@
 
 use std::sync::{Arc, RwLock, Mutex};
 use std::collections::{HashMap, VecDeque, BTreeMap};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use chrono::{DateTime, Utc, NaiveDate, TimeZone};
+use std::time::{Duration, Instant};
+use chrono::{DateTime, Utc, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-use super::tenant::{TenantId, TenantError};
-use super::quota::{ResourceType, UsagePattern, AlertType};
+/// Type alias for hourly aggregation storage
+pub type HourlyAggregations = Arc<RwLock<BTreeMap<DateTime<Utc>, HashMap<String, AggregatedMetric>>>>;
+
+/// Type alias for metric record tuple
+pub type MetricRecord = (String, f64, Option<HashMap<String, String>>);
+
+use super::tenant::TenantId;
+use super::quota::{UsagePattern, AlertType};
 use crate::error::{EventualiError, Result};
 
 /// Time-series data point for metrics
@@ -44,11 +50,16 @@ impl MetricDataPoint {
         self.labels.insert(key, value);
         self
     }
+
+    pub fn add_label(&mut self, key: String, value: String) {
+        self.labels.insert(key, value);
+    }
 }
 
 /// Time-series metric with rolling window
 #[derive(Debug)]
 pub struct TimeSeriesMetric {
+    #[allow(dead_code)] // Metric name for identification (stored but not currently accessed in implementation)
     name: String,
     data_points: VecDeque<MetricDataPoint>,
     max_points: usize,
@@ -383,11 +394,15 @@ pub struct TenantMetricsCollector {
     alert_rules: Arc<RwLock<Vec<MetricAlertRule>>>,
     active_alerts: Arc<RwLock<Vec<MetricAlert>>>,
     dashboards: Arc<RwLock<Vec<TenantDashboard>>>,
+    #[allow(dead_code)] // Collection interval for automated metric collection (configured but not actively used in current implementation)
     collection_interval: Duration,
+    #[allow(dead_code)] // Last collection timestamp for scheduling (tracked but not currently utilized)
     last_collection: Arc<Mutex<Instant>>,
     
     // Pre-computed aggregations for performance
-    hourly_aggregations: Arc<RwLock<BTreeMap<DateTime<Utc>, HashMap<String, AggregatedMetric>>>>,
+    #[allow(dead_code)] // Hourly aggregations for performance optimization (stored but not currently queried)
+    hourly_aggregations: HourlyAggregations,
+    #[allow(dead_code)] // Daily aggregations for long-term analytics (stored but not currently accessed)
     daily_aggregations: Arc<RwLock<BTreeMap<NaiveDate, HashMap<String, AggregatedMetric>>>>,
 }
 
@@ -428,7 +443,7 @@ impl TenantMetricsCollector {
     }
 
     /// Record multiple metrics at once
-    pub fn record_metrics(&self, metrics: Vec<(String, f64, Option<HashMap<String, String>>)>) {
+    pub fn record_metrics(&self, metrics: Vec<MetricRecord>) {
         for (name, value, labels) in metrics {
             self.record_metric(name, value, labels);
         }
@@ -648,7 +663,7 @@ impl TenantMetricsCollector {
             alert.acknowledged = true;
             Ok(())
         } else {
-            Err(EventualiError::Tenant(format!("Alert not found: {}", alert_id)))
+            Err(EventualiError::Tenant(format!("Alert not found: {alert_id}")))
         }
     }
 
@@ -659,7 +674,7 @@ impl TenantMetricsCollector {
             alert.resolved_at = Some(Utc::now());
             Ok(())
         } else {
-            Err(EventualiError::Tenant(format!("Alert not found: {}", alert_id)))
+            Err(EventualiError::Tenant(format!("Alert not found: {alert_id}")))
         }
     }
 
@@ -759,13 +774,13 @@ impl TenantMetricsCollector {
                 
                 for (name, metric) in metrics.iter() {
                     if let Some(latest) = metric.get_latest() {
-                        let metric_name = name.replace('-', "_").replace(' ', "_");
+                        let metric_name = name.replace(['-', ' '], "_");
                         
                         if latest.labels.is_empty() {
                             prom_data.push_str(&format!("{} {}\n", metric_name, latest.value));
                         } else {
                             let labels: Vec<String> = latest.labels.iter()
-                                .map(|(k, v)| format!("{}=\"{}\"", k, v))
+                                .map(|(k, v)| format!("{k}=\"{v}\""))
                                 .collect();
                             prom_data.push_str(&format!(
                                 "{}{{{}}} {}\n",
@@ -785,7 +800,7 @@ impl TenantMetricsCollector {
     /// Calculate comprehensive tenant health score
     pub fn calculate_health_score(&self) -> TenantHealthScore {
         let now = Utc::now();
-        let last_hour = now - chrono::Duration::hours(1);
+        let _last_hour = now - chrono::Duration::hours(1);
         
         // Get key metrics for health calculation
         let error_rate = self.get_current_metric_value("error_rate").unwrap_or(0.0);
@@ -795,15 +810,15 @@ impl TenantMetricsCollector {
         let storage_usage = self.get_current_metric_value("storage_usage_percent").unwrap_or(0.0);
         
         // Calculate individual component scores (0-100)
-        let error_score = (100.0 - (error_rate * 100.0)).max(0.0).min(100.0);
+        let error_score = (100.0 - (error_rate * 100.0)).clamp(0.0, 100.0);
         let performance_score = if response_time > 1000.0 {
             (1000.0 / response_time * 100.0).min(100.0)
         } else {
             100.0
         };
-        let cpu_score = (100.0 - cpu_usage).max(0.0).min(100.0);
-        let memory_score = (100.0 - memory_usage).max(0.0).min(100.0);
-        let storage_score = (100.0 - storage_usage).max(0.0).min(100.0);
+        let cpu_score = (100.0 - cpu_usage).clamp(0.0, 100.0);
+        let memory_score = (100.0 - memory_usage).clamp(0.0, 100.0);
+        let storage_score = (100.0 - storage_usage).clamp(0.0, 100.0);
         
         // Calculate SLA compliance score
         let sla_results = self.check_sla_compliance();
@@ -827,16 +842,14 @@ impl TenantMetricsCollector {
             .sum::<f64>();
         
         // Weighted overall score
-        let base_score = (
-            error_score * 0.25 +
+        let base_score = error_score * 0.25 +
             performance_score * 0.20 +
             cpu_score * 0.15 +
             memory_score * 0.15 +
             storage_score * 0.10 +
-            sla_score * 0.15
-        );
+            sla_score * 0.15;
         
-        let overall_score = (base_score - alert_penalty).max(0.0).min(100.0);
+        let overall_score = (base_score - alert_penalty).clamp(0.0, 100.0);
         
         // Determine health status
         let status = if overall_score >= 90.0 {

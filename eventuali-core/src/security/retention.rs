@@ -140,7 +140,7 @@ impl RetentionPolicyManager {
     /// Get a retention policy by name
     pub fn get_policy(&self, name: &str) -> Result<&RetentionPolicy> {
         self.policies.get(name).ok_or_else(|| {
-            EventualiError::Configuration(format!("Retention policy not found: {}", name))
+            EventualiError::Configuration(format!("Retention policy not found: {name}"))
         })
     }
 
@@ -148,7 +148,7 @@ impl RetentionPolicyManager {
     pub fn set_default_policy(&mut self, name: &str) -> Result<()> {
         if !self.policies.contains_key(name) {
             return Err(EventualiError::Configuration(
-                format!("Retention policy not found: {}", name)
+                format!("Retention policy not found: {name}")
             ));
         }
         self.default_policy = name.to_string();

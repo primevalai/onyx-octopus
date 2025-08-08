@@ -36,4 +36,25 @@ pub enum EventualiError {
     
     #[error("Observability error: {0}")]
     ObservabilityError(String),
+    
+    #[error("Validation error: {0}")]
+    Validation(String),
+    
+    #[error("Authentication error: {0}")]
+    Authentication(String),
+    
+    #[error("Authorization error: {0}")]
+    Authorization(String),
+    
+    #[error("Invalid state: {0}")]
+    InvalidState(String),
+    
+    #[error("Backpressure applied: {0}")]
+    BackpressureApplied(String),
+    
+    #[error("Batch processing error: {0}")]
+    BatchProcessingError(String),
+    
+    #[error("Database error: {0}")]
+    DatabaseError(String),
 }

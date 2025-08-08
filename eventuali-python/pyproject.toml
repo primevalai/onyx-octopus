@@ -36,6 +36,7 @@ dependencies = [
     "requests>=2.32.4",
     "pyyaml>=6.0.2",
     "psutil>=7.0.0",
+    "asyncio>=4.0.0",
 ]
 dynamic = ["version"]
 
@@ -60,7 +61,7 @@ Documentation = "https://github.com/primevalai/eventuali"
 [tool.maturin]
 python-source = "python"
 module-name = "eventuali._eventuali"
-features = ["pyo3/extension-module"]
+features = ["pyo3/extension-module", "observability"]
 
 [tool.black]
 line-length = 88

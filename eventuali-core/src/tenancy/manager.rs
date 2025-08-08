@@ -16,6 +16,12 @@ pub struct TenantManager {
     registry: Arc<RwLock<TenantRegistry>>,
 }
 
+impl Default for TenantManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TenantManager {
     pub fn new() -> Self {
         Self {
@@ -81,7 +87,7 @@ impl TenantManager {
         let tenants = self.tenants.read().unwrap();
         tenants.values()
             .filter(|tenant| {
-                status_filter.as_ref().map_or(true, |status| {
+                status_filter.as_ref().is_none_or(|status| {
                     std::mem::discriminant(&tenant.status) == std::mem::discriminant(status)
                 })
             })
@@ -141,7 +147,7 @@ impl TenantManager {
         let quota = quotas.get(tenant_id)
             .ok_or_else(|| EventualiError::from(TenantError::TenantNotFound(tenant_id.clone())))?;
         
-        Ok(quota.get_usage())
+        Ok(quota.get_legacy_usage())
     }
     
     /// Check if tenant can perform operation
@@ -150,7 +156,17 @@ impl TenantManager {
         let quota = quotas.get(tenant_id)
             .ok_or_else(|| EventualiError::from(TenantError::TenantNotFound(tenant_id.clone())))?;
         
-        quota.check_quota(resource_type, amount)
+        // Convert enhanced quota check result to simple boolean result
+        match quota.check_quota(resource_type, amount) {
+            Ok(result) => {
+                if result.allowed {
+                    Ok(())
+                } else {
+                    Err(EventualiError::Tenant(format!("Quota exceeded for resource {resource_type:?}")))
+                }
+            }
+            Err(e) => Err(e)
+        }
     }
     
     /// Record resource usage for a tenant
@@ -182,9 +198,11 @@ impl TenantManager {
         let quotas = self.quotas.read().unwrap();
         quotas.iter()
             .filter_map(|(tenant_id, quota)| {
-                let usage = quota.get_usage();
-                if usage.has_resources_near_limit() {
-                    Some((tenant_id.clone(), usage))
+                let enhanced_usage = quota.get_usage();
+                if enhanced_usage.has_resources_near_limit() {
+                    // Convert to legacy format for compatibility
+                    let legacy_usage = quota.get_legacy_usage();
+                    Some((tenant_id.clone(), legacy_usage))
                 } else {
                     None
                 }
@@ -247,6 +265,12 @@ pub struct TenantRegistry {
     performance_stats: PerformanceStats,
 }
 
+impl Default for TenantRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TenantRegistry {
     pub fn new() -> Self {
         Self {
@@ -283,6 +307,7 @@ impl TenantRegistry {
 
 #[derive(Debug, Clone)]
 struct RegistrationInfo {
+    #[allow(dead_code)] // Registration timestamp for audit and analytics (stored but not currently queried)
     registered_at: DateTime<Utc>,
     last_activity: DateTime<Utc>,
     operation_count: u64,
@@ -294,6 +319,12 @@ pub struct PerformanceStats {
     pub active_tenants: u64,
     pub total_operations: u64,
     pub average_response_time_ms: f64,
+}
+
+impl Default for PerformanceStats {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl PerformanceStats {

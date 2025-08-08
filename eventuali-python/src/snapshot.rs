@@ -113,7 +113,7 @@ impl PySnapshotConfig {
             "gzip" => SnapshotCompression::Gzip,
             "lz4" => SnapshotCompression::Lz4,
             _ => return Err(pyo3::exceptions::PyValueError::new_err(
-                format!("Unknown compression type: {}", compression)
+                format!("Unknown compression type: {compression}")
             )),
         };
 
@@ -183,12 +183,12 @@ impl PySnapshotService {
                     .max_connections(10)
                     .connect(database_url)
                     .await
-                    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 // Create and initialize snapshot store
                 let store = SqliteSnapshotStore::new(pool, None);
                 store.initialize().await
-                    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 // Create snapshot service
                 let service = SnapshotService::new(store, config.inner.clone());
@@ -219,7 +219,7 @@ impl PySnapshotService {
                     aggregate_version,
                     state_data.to_vec(),
                     event_count,
-                ).await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                ).await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 Ok(PyAggregateSnapshot::from(snapshot))
             })
@@ -234,7 +234,7 @@ impl PySnapshotService {
         pyo3_asyncio::tokio::get_runtime()
             .block_on(async {
                 let snapshot = service.load_latest_snapshot(&aggregate_id.to_string())
-                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 Ok(snapshot.map(PyAggregateSnapshot::from))
             })
@@ -247,7 +247,7 @@ impl PySnapshotService {
         })?;
 
         let decompressed = service.decompress_snapshot_data(&snapshot.inner)
-            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Serialization error: {}", e)))?;
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Serialization error: {e}")))?;
 
         Ok(decompressed)
     }
@@ -261,7 +261,7 @@ impl PySnapshotService {
         pyo3_asyncio::tokio::get_runtime()
             .block_on(async {
                 let should_take = service.should_take_snapshot(&aggregate_id.to_string(), current_version)
-                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 Ok(should_take)
             })
@@ -276,7 +276,7 @@ impl PySnapshotService {
         pyo3_asyncio::tokio::get_runtime()
             .block_on(async {
                 let cleaned_count = service.cleanup_old_snapshots()
-                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {}", e)))?;
+                    .await.map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(format!("Database error: {e}")))?;
 
                 Ok(cleaned_count)
             })

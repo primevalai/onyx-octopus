@@ -31,7 +31,7 @@ pub use security::{
 };
 pub use tenancy::{
     TenantId, TenantInfo, TenantConfig, TenantMetadata, TenantIsolation, 
-    IsolatedEventStore, TenantScope, TenantQuota, ResourceTracker, 
+    IsolatedEventStore, TenantScope, TenantQuota, ResourceType, 
     TenantManager, TenantOperations, TenantAwareEventStorage, 
     TenantStorageMetrics, TenantEventBatch, TenantScopedProjection,
     TenantProjectionManager, TenantProjectionRegistry, TenantProjectionMetrics

@@ -37,10 +37,9 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from collections import deque, defaultdict
 from eventuali import (
-    TenantId, EventStore, Event, EventData,
-    # When build succeeds, uncomment these:
-    # TenantMetricsCollector, MetricDataPoint, TenantHealthScore,
-    # HealthStatus
+    TenantId, EventStore, Event,
+    TenantMetricsCollector, MetricDataPoint, TenantHealthScore,
+    HealthStatus
 )
 
 def log_section(title: str):

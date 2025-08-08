@@ -2,9 +2,7 @@ use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
-
-use crate::event::{Event, EventData, EventMetadata};
+use crate::event::Event;
 use crate::aggregate::{AggregateId, AggregateVersion};
 use crate::store::{EventStore, EventStoreBackend};
 use crate::error::{EventualiError, Result};
@@ -68,6 +66,7 @@ impl TenantAwareEventStorage {
     }
     
     /// Get tenant-specific table/collection name
+    #[allow(dead_code)] // Utility method for database table naming (available for backend implementations)
     fn tenant_table_name(&self, base_name: &str) -> String {
         format!("{}_{}", self.tenant_id.db_prefix(), base_name)
     }
@@ -238,6 +237,12 @@ pub struct TenantStorageMetrics {
     pub operations_by_type: HashMap<String, u64>,
 }
 
+impl Default for TenantStorageMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TenantStorageMetrics {
     pub fn new() -> Self {
         Self {
@@ -330,6 +335,7 @@ impl TenantStorageMetrics {
 
 /// Batch operations for efficient tenant event storage
 pub struct TenantEventBatch {
+    #[allow(dead_code)] // Tenant ID for batch isolation (stored for validation but not actively used in current implementation)
     tenant_id: TenantId,
     events: Vec<Event>,
     max_batch_size: usize,

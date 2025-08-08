@@ -6,7 +6,6 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, Semaphore};
-use rusqlite::Connection as SqliteConnection;
 use crate::error::EventualiError;
 
 /// Connection pool statistics for monitoring and optimization
@@ -65,6 +64,22 @@ impl Default for PoolConfig {
     }
 }
 
+impl PoolConfig {
+    /// High-performance configuration for maximum throughput
+    pub fn high_performance() -> Self {
+        Self {
+            min_connections: 10,
+            max_connections: 200,
+            connection_timeout_ms: 2000,  // 2 seconds
+            idle_timeout_ms: 180000,      // 3 minutes
+            health_check_interval_ms: 15000, // 15 seconds
+            auto_scaling_enabled: true,
+            scale_up_threshold: 0.7, // Scale up when 70% connections are in use
+            scale_down_threshold: 0.2, // Scale down when less than 20% are in use
+        }
+    }
+}
+
 /// High-performance connection pool with automatic optimization
 pub struct ConnectionPool {
     config: PoolConfig,
@@ -100,7 +115,7 @@ impl ConnectionPool {
     }
 
     /// Get a connection from the pool with performance tracking
-    pub async fn get_connection(&self) -> Result<PoolGuard, EventualiError> {
+    pub async fn get_connection(&self) -> Result<PoolGuard<'_>, EventualiError> {
         let start_time = Instant::now();
         
         // Update stats
@@ -203,6 +218,7 @@ impl Clone for ConnectionPool {
 pub struct PoolGuard<'a> {
     database_path: String,
     pool: ConnectionPool,
+    #[allow(dead_code)] // Semaphore permit for connection limiting (held but not directly accessed in current implementation)
     permit: Option<tokio::sync::SemaphorePermit<'a>>,
 }
 
@@ -218,7 +234,7 @@ impl<'a> PoolGuard<'a> {
             rusqlite::Connection::open_in_memory()
         } else {
             rusqlite::Connection::open(&self.database_path)
-        }.map_err(|e| EventualiError::Configuration(format!("Failed to create connection: {}", e)))?;
+        }.map_err(|e| EventualiError::Configuration(format!("Failed to create connection: {e}")))?;
 
         // Optimize connection settings for performance
         conn.execute_batch("
@@ -227,7 +243,7 @@ impl<'a> PoolGuard<'a> {
             PRAGMA cache_size = -2000;
             PRAGMA temp_store = MEMORY;
             PRAGMA mmap_size = 268435456;
-        ").map_err(|e| EventualiError::Configuration(format!("Failed to optimize connection: {}", e)))?;
+        ").map_err(|e| EventualiError::Configuration(format!("Failed to optimize connection: {e}")))?;
 
         Ok(conn)
     }

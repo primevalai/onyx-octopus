@@ -123,7 +123,6 @@ pub trait EventStreamProcessor {
 }
 
 /// Built-in processors
-
 /// Projection processor that updates read models
 pub struct ProjectionProcessor<P: Projection> {
     projection: Arc<P>,

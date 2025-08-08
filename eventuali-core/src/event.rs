@@ -24,6 +24,7 @@ pub enum EventData {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct EventMetadata {
     pub causation_id: Option<EventId>,
     pub correlation_id: Option<EventId>,
@@ -59,16 +60,6 @@ impl Event {
     }
 }
 
-impl Default for EventMetadata {
-    fn default() -> Self {
-        Self {
-            causation_id: None,
-            correlation_id: None,
-            user_id: None,
-            headers: std::collections::HashMap::new(),
-        }
-    }
-}
 
 impl EventData {
     pub fn from_json<T: Serialize>(value: &T) -> crate::Result<Self> {
@@ -109,7 +100,7 @@ impl EventData {
         match self {
             EventData::Protobuf(data) => {
                 T::decode(&data[..])
-                    .map_err(|e| crate::EventualiError::Protobuf(e))
+                    .map_err(crate::EventualiError::Protobuf)
             },
             EventData::Json(_) => Err(crate::EventualiError::InvalidEventData(
                 "Cannot decode protobuf message from JSON data".to_string(),

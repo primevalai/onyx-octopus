@@ -2,7 +2,7 @@
 //!
 //! Provides comprehensive tracing capabilities with minimal performance overhead.
 
-use crate::error::{EventualiError, Result};
+use crate::error::Result;
 use crate::observability::correlation::{CorrelationId, generate_correlation_id};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

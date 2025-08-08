@@ -13,21 +13,16 @@ use eventuali_core::security::{
     RiskLevel as CoreRiskLevel, DataClassification as CoreDataClassification,
     ComplianceTag as CoreComplianceTag, AuditSearchCriteria as CoreAuditSearchCriteria,
     ComplianceReport as CoreComplianceReport, IntegrityStatus as CoreIntegrityStatus,
-    RiskSummary as CoreRiskSummary, RetentionPolicy as CoreRetentionPolicy,
-    ComplianceSettings as CoreComplianceSettings,
     GdprManager as CoreGdprManager, DataSubject as CoreDataSubject,
-    ProcessingActivity as CoreProcessingActivity, ConsentRecord as CoreConsentRecord,
-    LawfulBasis as CoreLawfulBasis, BreachNotification as CoreBreachNotification,
-    DataProtectionImpactAssessment as CoreDataProtectionImpactAssessment,
-    SubjectRightsRequest as CoreSubjectRightsRequest, DataExportRecord as CoreDataExportRecord,
-    DeletionRecord as CoreDeletionRecord, GdprComplianceStatus as CoreGdprComplianceStatus,
+    ConsentRecord as CoreConsentRecord,
+    BreachNotification as CoreBreachNotification,
+    SubjectRightsRequest as CoreSubjectRightsRequest,
+    GdprComplianceStatus as CoreGdprComplianceStatus,
     GdprComplianceReport as CoreGdprComplianceReport, PersonalDataType as CorePersonalDataType,
     LawfulBasisType as CoreLawfulBasisType, ConsentStatus as CoreConsentStatus,
     ConsentMethod as CoreConsentMethod, ConsentEvidence as CoreConsentEvidence,
     DataSubjectRight as CoreDataSubjectRight, RequestStatus as CoreRequestStatus,
     BreachType as CoreBreachType, ExportFormat as CoreExportFormat,
-    DisposalMethod as CoreDisposalMethod, ComplexityLevel as CoreComplexityLevel,
-    ResponseMethod as CoreResponseMethod,
     // Digital signatures
     EventSigner as CoreEventSigner, SigningKeyManager as CoreSigningKeyManager,
     SigningKey as CoreSigningKey, SignatureAlgorithm as CoreSignatureAlgorithm,
@@ -36,16 +31,16 @@ use eventuali_core::security::{
     RetentionPolicyManager as CoreRetentionPolicyManager,
     RetentionPeriod as CoreRetentionPeriod, DeletionMethod as CoreDeletionMethod,
     DataCategory as CoreDataCategory, RetentionEnforcementResult as CoreRetentionEnforcementResult,
-    LegalHold as CoreLegalHold, LegalHoldStatus as CoreLegalHoldStatus,
+    LegalHold as CoreLegalHold,
     EventDataClassification as CoreEventDataClassification,
     // Vulnerability scanning
     VulnerabilityScanner as CoreVulnerabilityScanner, VulnerabilityScanResult as CoreVulnerabilityScanResult,
     VulnerabilityFinding as CoreVulnerabilityFinding, VulnerabilityCategory as CoreVulnerabilityCategory,
-    VulnerabilitySeverity as CoreVulnerabilitySeverity, VulnerabilityStatus as CoreVulnerabilityStatus,
-    PenetrationTestFramework as CorePenetrationTestFramework, PenetrationTest as CorePenetrationTest,
-    AttackScenario as CoreAttackScenario, AttackType as CoreAttackType
+    VulnerabilitySeverity as CoreVulnerabilitySeverity,
+    PenetrationTestFramework as CorePenetrationTestFramework, PenetrationTest as CorePenetrationTest
 };
-use eventuali_core::{EventData as CoreEventData, Result as CoreResult};
+use eventuali_core::{EventData as CoreEventData};
+use eventuali_core::security::retention::RetentionPolicy as CoreRetentionPolicy;
 use crate::event::PyEvent;
 use crate::error::map_rust_error_to_python;
 use std::collections::HashMap;
@@ -113,7 +108,7 @@ impl PyEventEncryption {
     /// Encrypt JSON data using the default key
     pub fn encrypt_json_data(&self, data: String) -> PyResult<PyEncryptedEventData> {
         let json_value: serde_json::Value = serde_json::from_str(&data)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid JSON: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid JSON: {e}")))?;
         let event_data = CoreEventData::Json(json_value);
         
         self.inner
@@ -125,7 +120,7 @@ impl PyEventEncryption {
     /// Encrypt JSON data using a specific key
     pub fn encrypt_json_data_with_key(&self, data: String, key_id: &str) -> PyResult<PyEncryptedEventData> {
         let json_value: serde_json::Value = serde_json::from_str(&data)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid JSON: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid JSON: {e}")))?;
         let event_data = CoreEventData::Json(json_value);
         
         self.inner
@@ -143,13 +138,19 @@ impl PyEventEncryption {
         match decrypted_data {
             CoreEventData::Json(value) => {
                 serde_json::to_string(&value)
-                    .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize JSON: {}", e)))
+                    .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize JSON: {e}")))
             }
             CoreEventData::Protobuf(bytes) => {
                 String::from_utf8(bytes)
-                    .map_err(|e| PyRuntimeError::new_err(format!("Failed to convert bytes to string: {}", e)))
+                    .map_err(|e| PyRuntimeError::new_err(format!("Failed to convert bytes to string: {e}")))
             }
         }
+    }
+}
+
+impl Default for PyKeyManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -305,6 +306,7 @@ pub struct PyRbacManager {
 #[pyclass(name = "User")]
 #[derive(Clone)]
 pub struct PyUser {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreUser,
 }
 
@@ -312,6 +314,7 @@ pub struct PyUser {
 #[pyclass(name = "Role")]
 #[derive(Clone)]
 pub struct PyRole {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreRole,
 }
 
@@ -319,6 +322,7 @@ pub struct PyRole {
 #[pyclass(name = "Permission")]
 #[derive(Clone)]
 pub struct PyPermission {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CorePermission,
 }
 
@@ -326,6 +330,7 @@ pub struct PyPermission {
 #[pyclass(name = "SecurityLevel")]
 #[derive(Clone)]
 pub struct PySecurityLevel {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreSecurityLevel,
 }
 
@@ -333,6 +338,7 @@ pub struct PySecurityLevel {
 #[pyclass(name = "Session")]
 #[derive(Clone)]
 pub struct PySession {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreSession,
 }
 
@@ -340,6 +346,7 @@ pub struct PySession {
 #[pyclass(name = "AccessDecision")]
 #[derive(Clone)]
 pub struct PyAccessDecision {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreAccessDecision,
 }
 
@@ -347,6 +354,7 @@ pub struct PyAccessDecision {
 #[pyclass(name = "AuditEntry")]
 #[derive(Clone)]
 pub struct PyAuditEntry {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreAuditEntry,
 }
 
@@ -422,6 +430,12 @@ impl PySecurityUtils {
         results.insert("iterations".to_string(), iter_count as f64);
 
         Ok(results)
+    }
+}
+
+impl Default for PyRbacManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -573,7 +587,7 @@ impl PyAccessDecision {
         match &self.inner {
             CoreAccessDecision::Allow => "Allow".to_string(),
             CoreAccessDecision::Deny => "Deny".to_string(),
-            CoreAccessDecision::DenyWithReason(reason) => format!("Deny: {}", reason),
+            CoreAccessDecision::DenyWithReason(reason) => format!("Deny: {reason}"),
         }
     }
 }
@@ -707,6 +721,12 @@ pub struct PyIntegrityStatus {
     pub(crate) inner: CoreIntegrityStatus,
 }
 
+impl Default for PyAuditManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PyAuditManager {
     /// Create a new audit manager
@@ -811,7 +831,7 @@ impl PyAuditManager {
         
         let start_dt = if let Some(time_str) = start_time {
             Some(DateTime::parse_from_rfc3339(&time_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_time format: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_time format: {e}")))?
                 .with_timezone(&chrono::Utc))
         } else {
             None
@@ -819,7 +839,7 @@ impl PyAuditManager {
         
         let end_dt = if let Some(time_str) = end_time {
             Some(DateTime::parse_from_rfc3339(&time_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_time format: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_time format: {e}")))?
                 .with_timezone(&chrono::Utc))
         } else {
             None
@@ -856,11 +876,11 @@ impl PyAuditManager {
         use chrono::DateTime;
         
         let start_dt = DateTime::parse_from_rfc3339(&start_time)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_time format: {}", e)))?
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_time format: {e}")))?
             .with_timezone(&chrono::Utc);
         
         let end_dt = DateTime::parse_from_rfc3339(&end_time)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_time format: {}", e)))?
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_time format: {e}")))?
             .with_timezone(&chrono::Utc);
 
         self.inner
@@ -1087,7 +1107,7 @@ impl PyComplianceTag {
 
     #[classmethod]
     pub fn pci_dss(_cls: &PyType) -> Self {
-        Self { inner: CoreComplianceTag::PCI_DSS }
+        Self { inner: CoreComplianceTag::PciDss }
     }
 
     #[classmethod]
@@ -1105,7 +1125,7 @@ impl PyComplianceTag {
             CoreComplianceTag::SOX => "SOX",
             CoreComplianceTag::GDPR => "GDPR",
             CoreComplianceTag::HIPAA => "HIPAA",
-            CoreComplianceTag::PCI_DSS => "PCI_DSS",
+            CoreComplianceTag::PciDss => "PCI_DSS",
             CoreComplianceTag::ISO27001 => "ISO27001",
             CoreComplianceTag::NIST => "NIST",
             CoreComplianceTag::COBIT => "COBIT",
@@ -1319,6 +1339,7 @@ pub struct PyGdprManager {
 #[pyclass(name = "DataSubject")]
 #[derive(Clone)]
 pub struct PyDataSubject {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreDataSubject,
 }
 
@@ -1326,6 +1347,7 @@ pub struct PyDataSubject {
 #[pyclass(name = "ConsentRecord")]
 #[derive(Clone)]
 pub struct PyConsentRecord {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreConsentRecord,
 }
 
@@ -1340,6 +1362,7 @@ pub struct PySubjectRightsRequest {
 #[pyclass(name = "BreachNotification")]
 #[derive(Clone)]
 pub struct PyBreachNotification {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreBreachNotification,
 }
 
@@ -1411,6 +1434,12 @@ pub struct PyBreachType {
 #[derive(Clone)]
 pub struct PyExportFormat {
     pub(crate) inner: CoreExportFormat,
+}
+
+impl Default for PyGdprManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[pymethods]
@@ -1576,11 +1605,11 @@ impl PyGdprManager {
         use chrono::DateTime;
 
         let start_dt = DateTime::parse_from_rfc3339(&start_date)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_date format: {}", e)))?
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid start_date format: {e}")))?
             .with_timezone(&chrono::Utc);
 
         let end_dt = DateTime::parse_from_rfc3339(&end_date)
-            .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_date format: {}", e)))?
+            .map_err(|e| PyRuntimeError::new_err(format!("Invalid end_date format: {e}")))?
             .with_timezone(&chrono::Utc);
 
         let report = self.inner.generate_gdpr_compliance_report(start_dt, end_dt);
@@ -2081,6 +2110,7 @@ pub struct PyEventSigner {
 
 /// Python wrapper for SigningKeyManager
 #[pyclass(name = "SigningKeyManager")]
+#[derive(Clone)]
 pub struct PySigningKeyManager {
     pub(crate) inner: CoreSigningKeyManager,
 }
@@ -2167,6 +2197,12 @@ impl PyEventSigner {
         self.inner
             .verify_data_signature(&data, &signature.inner)
             .map_err(map_rust_error_to_python)
+    }
+}
+
+impl Default for PySigningKeyManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -2370,6 +2406,7 @@ pub struct PyRetentionPolicy {
 #[pyclass(name = "RetentionPeriod")]
 #[derive(Clone)]
 pub struct PyRetentionPeriod {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreRetentionPeriod,
 }
 
@@ -2391,6 +2428,7 @@ pub struct PyDataCategory {
 #[pyclass(name = "RetentionEnforcementResult")]
 #[derive(Clone)]
 pub struct PyRetentionEnforcementResult {
+    #[allow(dead_code)] // Inner field used by PyO3 for Python integration
     pub(crate) inner: CoreRetentionEnforcementResult,
 }
 
@@ -2406,6 +2444,12 @@ pub struct PyLegalHold {
 #[derive(Clone)]
 pub struct PyEventDataClassification {
     pub(crate) inner: CoreEventDataClassification,
+}
+
+impl Default for PyRetentionPolicyManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[pymethods]
@@ -2509,12 +2553,12 @@ impl PyRetentionPolicy {
 
     /// Check if policy applies to data category
     pub fn applies_to_category(&self, category: PyDataCategory) -> bool {
-        self.inner.applies_to_category(&category.inner)
+        self.inner.data_categories.contains(&category.inner)
     }
 
     /// Update timestamp
     pub fn touch(&mut self) {
-        self.inner.touch()
+        self.inner.updated_at = chrono::Utc::now();
     }
 }
 
@@ -2752,6 +2796,12 @@ pub struct PyPenetrationTest {
     pub(crate) inner: CorePenetrationTest,
 }
 
+impl Default for PyVulnerabilityScanner {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PyVulnerabilityScanner {
     /// Create new vulnerability scanner
@@ -2765,7 +2815,7 @@ impl PyVulnerabilityScanner {
     /// Scan events for vulnerabilities
     pub fn scan_events(&self, events: Vec<PyEvent>) -> PyResult<PyVulnerabilityScanResult> {
         let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| PyRuntimeError::new_err(format!("Failed to create tokio runtime: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to create tokio runtime: {e}")))?;
         
         let core_events = events.into_iter().map(|e| e.inner).collect();
         
@@ -2984,6 +3034,12 @@ impl PyVulnerabilitySeverity {
     }
 }
 
+impl Default for PyPenetrationTestFramework {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PyPenetrationTestFramework {
     /// Create new penetration test framework
@@ -3004,7 +3060,7 @@ impl PyPenetrationTestFramework {
     /// Execute penetration test
     pub fn execute_test(&mut self, test_id: &str, events: Vec<PyEvent>) -> PyResult<()> {
         let rt = tokio::runtime::Runtime::new()
-            .map_err(|e| PyRuntimeError::new_err(format!("Failed to create tokio runtime: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("Failed to create tokio runtime: {e}")))?;
         
         let core_events = events.into_iter().map(|e| e.inner).collect();
         

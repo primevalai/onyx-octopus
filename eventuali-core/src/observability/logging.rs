@@ -4,7 +4,7 @@
 
 use crate::error::{EventualiError, Result};
 use crate::observability::{
-    correlation::{CorrelationId, CorrelationContext, TraceCorrelation},
+    correlation::{CorrelationId, CorrelationContext},
     telemetry::TraceContext,
     ObservabilityConfig,
 };
@@ -14,7 +14,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::{Event, Subscriber};
 use tracing_subscriber::{
-    fmt::{format::FmtSpan, MakeWriter},
+    fmt::format::FmtSpan,
     layer::{Context, SubscriberExt},
     registry::LookupSpan,
     Layer, Registry,
@@ -193,13 +193,13 @@ impl LogEntry {
     /// Convert to JSON string
     pub fn to_json(&self) -> Result<String> {
         serde_json::to_string(self)
-            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize log entry: {}", e)))
+            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize log entry: {e}")))
     }
 
     /// Convert to pretty JSON string
     pub fn to_json_pretty(&self) -> Result<String> {
         serde_json::to_string_pretty(self)
-            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize log entry: {}", e)))
+            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize log entry: {e}")))
     }
 }
 
@@ -208,6 +208,7 @@ impl LogEntry {
 pub struct StructuredLogger {
     config: ObservabilityConfig,
     entries: Arc<RwLock<Vec<LogEntry>>>,
+    #[allow(dead_code)] // Correlation logger for request tracing (initialized but not currently used in main logger)
     correlation_logger: CorrelationLogger,
 }
 
@@ -236,7 +237,7 @@ impl StructuredLogger {
                 .with(ObservabilityLayer::new(self.entries.clone()));
 
             tracing::subscriber::set_global_default(subscriber)
-                .map_err(|e| EventualiError::ObservabilityError(format!("Failed to set tracing subscriber: {}", e)))?;
+                .map_err(|e| EventualiError::ObservabilityError(format!("Failed to set tracing subscriber: {e}")))?;
         }
 
         tracing::info!(
@@ -333,10 +334,10 @@ impl StructuredLogger {
     pub async fn export_logs(&self, file_path: &str) -> Result<()> {
         let entries = self.get_all_entries().await;
         let json = serde_json::to_string_pretty(&entries)
-            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize logs: {}", e)))?;
+            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to serialize logs: {e}")))?;
 
         tokio::fs::write(file_path, json).await
-            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to write log file: {}", e)))?;
+            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to write log file: {e}")))?;
 
         Ok(())
     }
@@ -420,6 +421,7 @@ impl CorrelationLogger {
 #[derive(Debug)]
 pub struct ObservabilityLogger {
     structured_logger: Arc<StructuredLogger>,
+    #[allow(dead_code)] // Correlation logger for request tracing (initialized but not currently used in observability logger)
     correlation_logger: CorrelationLogger,
 }
 
@@ -505,8 +507,10 @@ impl LogAggregator {
     pub async fn get_statistics(&self) -> LogStatistics {
         let entries = self.entries.read().await;
         
-        let mut stats = LogStatistics::default();
-        stats.total_entries = entries.len() as u64;
+        let mut stats = LogStatistics {
+            total_entries: entries.len() as u64,
+            ..Default::default()
+        };
 
         for entry in entries.iter() {
             match entry.level {
@@ -539,6 +543,7 @@ impl Default for LogAggregator {
 
 /// Statistics about collected logs
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct LogStatistics {
     pub total_entries: u64,
     pub error_count: u64,
@@ -552,21 +557,6 @@ pub struct LogStatistics {
     pub unique_correlations: std::collections::HashSet<String>,
 }
 
-impl Default for LogStatistics {
-    fn default() -> Self {
-        Self {
-            total_entries: 0,
-            error_count: 0,
-            warn_count: 0,
-            info_count: 0,
-            debug_count: 0,
-            trace_count: 0,
-            unique_correlation_count: 0,
-            operations: HashMap::new(),
-            unique_correlations: std::collections::HashSet::new(),
-        }
-    }
-}
 
 /// Custom tracing layer for capturing structured logs
 struct ObservabilityLayer {
@@ -627,9 +617,9 @@ impl EventVisitor {
 impl tracing::field::Visit for EventVisitor {
     fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn std::fmt::Debug) {
         if field.name() == "message" {
-            self.message = Some(format!("{:?}", value));
+            self.message = Some(format!("{value:?}"));
         } else {
-            self.fields.insert(field.name().to_string(), serde_json::Value::String(format!("{:?}", value)));
+            self.fields.insert(field.name().to_string(), serde_json::Value::String(format!("{value:?}")));
         }
     }
 

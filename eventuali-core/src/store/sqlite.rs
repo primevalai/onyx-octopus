@@ -37,7 +37,7 @@ impl SQLiteBackend {
                     } else {
                         // Convert relative path to absolute path
                         std::env::current_dir()
-                            .map_err(|e| EventualiError::Configuration(format!("Cannot get current directory: {}", e)))?
+                            .map_err(|e| EventualiError::Configuration(format!("Cannot get current directory: {e}")))?
                             .join(path)
                             .to_string_lossy()
                             .to_string()
@@ -55,7 +55,7 @@ impl SQLiteBackend {
                     
                     // Use SqliteConnectOptions for proper file database creation
                     let connect_options = SqliteConnectOptions::from_str(&full_path)
-                        .map_err(|e| EventualiError::Configuration(format!("Invalid SQLite path {}: {}", full_path, e)))?
+                        .map_err(|e| EventualiError::Configuration(format!("Invalid SQLite path {full_path}: {e}")))?
                         .create_if_missing(true)
                         .journal_mode(SqliteJournalMode::Wal);
                     
@@ -160,8 +160,8 @@ impl EventStoreBackend for SQLiteBackend {
                 .bind(&event.aggregate_id)
                 .bind(&event.aggregate_type)
                 .bind(&event.event_type)
-                .bind(&event.event_version)
-                .bind(&event.aggregate_version)
+                .bind(event.event_version)
+                .bind(event.aggregate_version)
                 .bind(&event_data_text)
                 .bind(event_data_type)
                 .bind(&metadata_text)
@@ -332,8 +332,7 @@ impl SQLiteBackend {
             }
             _ => {
                 return Err(EventualiError::InvalidEventData(format!(
-                    "Unknown event data type: {}",
-                    event_data_type
+                    "Unknown event data type: {event_data_type}"
                 )))
             }
         };

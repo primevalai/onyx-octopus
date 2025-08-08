@@ -35,7 +35,7 @@ impl ProtoSerializer {
     /// Serialize an aggregate snapshot to Protocol Buffers format
     pub fn serialize_snapshot(&self, snapshot: &AggregateSnapshot) -> Result<Vec<u8>> {
         let data_bytes = serde_json::to_vec(&snapshot.data)
-            .map_err(|e| EventualiError::Serialization(e))?;
+            .map_err(EventualiError::Serialization)?;
         
         let proto_snapshot = eventuali::AggregateSnapshot {
             aggregate_id: snapshot.aggregate_id.clone(),
@@ -58,13 +58,13 @@ impl ProtoSerializer {
 
         let data = if !proto_snapshot.data.is_empty() {
             serde_json::from_slice(&proto_snapshot.data)
-                .map_err(|e| EventualiError::Serialization(e))?
+                .map_err(EventualiError::Serialization)?
         } else {
             serde_json::json!({})
         };
 
         let timestamp = DateTime::from_timestamp(proto_snapshot.timestamp, 0)
-            .unwrap_or_else(|| Utc::now())
+            .unwrap_or_else(Utc::now)
             .with_timezone(&Utc);
 
         Ok(AggregateSnapshot {
@@ -80,7 +80,7 @@ impl ProtoSerializer {
         let data_bytes = match &event.data {
             EventData::Json(json) => {
                 serde_json::to_vec(json)
-                    .map_err(|e| EventualiError::Serialization(e))?
+                    .map_err(EventualiError::Serialization)?
             },
             EventData::Protobuf(bytes) => bytes.clone(),
         };
@@ -135,7 +135,7 @@ impl ProtoSerializer {
         };
 
         let timestamp = DateTime::from_timestamp(proto_event.timestamp, 0)
-            .unwrap_or_else(|| Utc::now())
+            .unwrap_or_else(Utc::now)
             .with_timezone(&Utc);
 
         Ok(Event {

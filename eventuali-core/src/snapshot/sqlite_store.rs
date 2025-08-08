@@ -79,7 +79,7 @@ impl SnapshotStore for SqliteSnapshotStore {
             .bind(snapshot.snapshot_id.to_string())
             .bind(&snapshot.aggregate_id)
             .bind(&snapshot.aggregate_type)
-            .bind(&snapshot.aggregate_version)
+            .bind(snapshot.aggregate_version)
             .bind(&snapshot.state_data)
             .bind(compression_str)
             .bind(&metadata_json)
@@ -250,7 +250,7 @@ impl SqliteSnapshotStore {
             "gzip" => SnapshotCompression::Gzip,
             "lz4" => SnapshotCompression::Lz4,
             _ => return Err(EventualiError::InvalidEventData(format!(
-                "Unknown compression type: {}", compression_str
+                "Unknown compression type: {compression_str}"
             ))),
         };
 

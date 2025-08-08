@@ -12,6 +12,7 @@ pub struct RbacManager {
     sessions: HashMap<String, Session>,
     audit_log: Vec<AuditEntry>,
     role_hierarchy: RoleHierarchy,
+    #[allow(dead_code)] // Policy engine is part of the RBAC API but not yet implemented
     policy_engine: PolicyEngine,
 }
 
@@ -109,6 +110,7 @@ pub struct RoleHierarchy {
 
 /// Policy engine for complex access control
 pub struct PolicyEngine {
+    #[allow(dead_code)] // Policies storage for future dynamic policy evaluation
     policies: HashMap<String, AccessPolicy>,
 }
 
@@ -238,7 +240,7 @@ impl RbacManager {
         for (perm_id, resource, action, desc) in permissions {
             let permission = Permission {
                 permission_id: perm_id.to_string(),
-                name: format!("{} {}", resource, action),
+                name: format!("{resource} {action}"),
                 description: desc.to_string(),
                 resource_type: resource.to_string(),
                 action: action.to_string(),
@@ -303,7 +305,7 @@ impl RbacManager {
             timestamp: Utc::now(),
             ip_address: None,
             session_id: None,
-            reason: Some(format!("User {} created", username)),
+            reason: Some(format!("User {username} created")),
             metadata: HashMap::new(),
         });
         
@@ -313,11 +315,11 @@ impl RbacManager {
     /// Assign role to user
     pub fn assign_role_to_user(&mut self, user_id: &str, role_id: &str) -> Result<()> {
         if !self.users.contains_key(user_id) {
-            return Err(EventualiError::Validation(format!("User {} not found", user_id)));
+            return Err(EventualiError::Validation(format!("User {user_id} not found")));
         }
         
         if !self.roles.contains_key(role_id) {
-            return Err(EventualiError::Validation(format!("Role {} not found", role_id)));
+            return Err(EventualiError::Validation(format!("Role {role_id} not found")));
         }
         
         let user = self.users.get_mut(user_id).unwrap();
@@ -333,7 +335,7 @@ impl RbacManager {
             timestamp: Utc::now(),
             ip_address: None,
             session_id: None,
-            reason: Some(format!("Role {} assigned to user", role_id)),
+            reason: Some(format!("Role {role_id} assigned to user")),
             metadata: HashMap::new(),
         });
         
@@ -367,7 +369,7 @@ impl RbacManager {
             timestamp: Utc::now(),
             ip_address: None,
             session_id: None,
-            reason: Some(format!("Role {} created", name)),
+            reason: Some(format!("Role {name} created")),
             metadata: HashMap::new(),
         });
         
@@ -377,11 +379,11 @@ impl RbacManager {
     /// Assign permission to role
     pub fn assign_permission_to_role(&mut self, role_id: &str, permission_id: &str) -> Result<()> {
         if !self.roles.contains_key(role_id) {
-            return Err(EventualiError::Validation(format!("Role {} not found", role_id)));
+            return Err(EventualiError::Validation(format!("Role {role_id} not found")));
         }
         
         if !self.permissions.contains_key(permission_id) {
-            return Err(EventualiError::Validation(format!("Permission {} not found", permission_id)));
+            return Err(EventualiError::Validation(format!("Permission {permission_id} not found")));
         }
         
         let role = self.roles.get_mut(role_id).unwrap();
@@ -492,11 +494,11 @@ impl RbacManager {
         }
         
         // Check permission
-        let permission_id = format!("{}:{}", resource, action);
+        let permission_id = format!("{resource}:{action}");
         let decision = if session_data.1.contains(&permission_id) {
             AccessDecision::Allow
         } else {
-            AccessDecision::DenyWithReason(format!("Permission {} not granted", permission_id))
+            AccessDecision::DenyWithReason(format!("Permission {permission_id} not granted"))
         };
         
         self.audit_access(Some(&session_data.0), resource, action, decision.clone(), context);
@@ -587,7 +589,7 @@ impl RbacManager {
         self.audit_log.push(AuditEntry {
             audit_id: Uuid::new_v4().to_string(),
             user_id: user_id.unwrap_or("unknown").to_string(),
-            action: format!("{}:{}", resource, action),
+            action: format!("{resource}:{action}"),
             resource: resource.to_string(),
             resource_id: None,
             decision,
@@ -673,7 +675,7 @@ impl RoleHierarchy {
     fn add_parent(&mut self, child_role: &str, parent_role: &str) {
         self.hierarchy
             .entry(child_role.to_string())
-            .or_insert_with(HashSet::new)
+            .or_default()
             .insert(parent_role.to_string());
     }
 }

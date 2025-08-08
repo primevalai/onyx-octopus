@@ -16,6 +16,12 @@ pub struct PyEventStore {
     store: Arc<Mutex<Option<Box<dyn EventStore + Send + Sync>>>>,
 }
 
+impl Default for PyEventStore {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PyEventStore {
     #[new]
@@ -37,9 +43,8 @@ impl PyEventStore {
                 let path = if connection_string.starts_with("sqlite://:memory:") {
                     // sqlite://:memory: format - in-memory database
                     ":memory:".to_string()
-                } else if connection_string.starts_with("sqlite:///") {
+                } else if let Some(path_part) = connection_string.strip_prefix("sqlite:///") {
                     // sqlite:///path format - after ///
-                    let path_part = &connection_string[10..];  // Remove 'sqlite:///'
                     if path_part.starts_with('/') {
                         // Absolute path like sqlite:////absolute/path
                         path_part.to_string()
@@ -47,9 +52,9 @@ impl PyEventStore {
                         // Relative path like sqlite:///relative/path - use as-is
                         path_part.to_string()
                     }
-                } else if connection_string.starts_with("sqlite://") {
+                } else if let Some(stripped) = connection_string.strip_prefix("sqlite://") {
                     // sqlite://path format - relative path after //
-                    connection_string[9..].to_string()  // Remove 'sqlite://'
+                    stripped.to_string()
                 } else {
                     // Fallback - treat as relative path
                     connection_string.to_string()
@@ -57,7 +62,7 @@ impl PyEventStore {
                 EventStoreConfig::sqlite(path)
             } else {
                 return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                    format!("Unsupported connection string format: {}", connection_string)
+                    format!("Unsupported connection string format: {connection_string}")
                 ));
             };
 
@@ -236,7 +241,7 @@ impl PyEventStore {
             let mut data_map = serde_json::Map::new();
             
             // Known metadata fields that should not be included in event data
-            let metadata_fields = vec![
+            let metadata_fields = [
                 "event_id", "aggregate_id", "aggregate_type", "event_type", 
                 "event_version", "aggregate_version", "timestamp", 
                 "causation_id", "correlation_id", "user_id"

@@ -110,9 +110,11 @@ pub struct OrderItem {
     
     // Try to compile protos, but provide fallback if protoc is missing
     match config.compile_protos(&["proto/event.proto"], &["proto/"]) {
-        Ok(()) => println!("cargo:warning=Successfully generated protobuf code"),
+        Ok(()) => {
+            // Successfully generated protobuf code (no output to avoid unnecessary warnings)
+        },
         Err(e) => {
-            println!("cargo:warning=Failed to compile protos: {}. Using fallback definitions.", e);
+            println!("cargo:warning=Failed to compile protos: {e}. Using fallback definitions.");
             
             let out_dir = env::var("OUT_DIR").unwrap();
             let dest_path = std::path::Path::new(&out_dir).join("eventuali.rs");

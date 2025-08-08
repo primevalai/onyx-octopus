@@ -7,7 +7,7 @@ use pyo3::prelude::*;
 use std::collections::HashMap;
 use eventuali_core::performance::{
     ConnectionPool, PoolConfig, PoolStats, BatchConfig, BatchStats, BatchProcessor, EventBatchProcessor,
-    WalConfig, WalStats, WalOptimizer, WalSynchronousMode, WalJournalMode, TempStoreMode, AutoVacuumMode,
+    WalConfig, WalStats, WalSynchronousMode, WalJournalMode, TempStoreMode, AutoVacuumMode,
     ReplicaConfig, ReadPreference, ReadReplicaManager,
     CacheConfig, EvictionPolicy, CacheManager,
     CompressionConfig, CompressionAlgorithm, CompressionManager
@@ -269,6 +269,12 @@ pub struct PyConnectionPool {
     pub inner: Option<ConnectionPool>,
 }
 
+impl Default for PyConnectionPool {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PyConnectionPool {
     #[new]
@@ -342,7 +348,7 @@ pub fn benchmark_connection_pool<'py>(
     pyo3_asyncio::tokio::future_into_py(py, async move {
         match benchmark_pool_performance(database_path, config, num_operations, concurrency).await {
             Ok(result) => Ok(result),
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e)))
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{e}")))
         }
     })
 }
@@ -363,7 +369,7 @@ pub fn compare_pool_configurations<'py>(
         for config in configs {
             match benchmark_pool_performance(database_path.clone(), config, num_operations, 10).await {
                 Ok(result) => results.push(result),
-                Err(e) => return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e))),
+                Err(e) => return Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{e}"))),
             }
         }
         
@@ -467,6 +473,7 @@ impl PyBatchConfig {
         transaction_batch_size = 500,
         parallel_processing = true
     ))]
+    #[allow(unused_variables)] // Some parameters are part of Python API but not yet used in Rust implementation
     pub fn new(
         max_batch_size: usize,
         min_batch_size: usize,
@@ -662,6 +669,7 @@ impl PyBatchStats {
 }
 
 /// Performance benchmark utilities for batch processing
+#[allow(dead_code)] // Benchmark function available for Python but not directly called from Rust
 #[pyfunction]
 #[pyo3(signature = (database_path, config = None, num_events = 10000, concurrency = 10))]
 pub fn benchmark_batch_processing<'py>(
@@ -676,11 +684,12 @@ pub fn benchmark_batch_processing<'py>(
     pyo3_asyncio::tokio::future_into_py(py, async move {
         match benchmark_batch_performance(database_path, batch_config, num_events, concurrency).await {
             Ok(result) => Ok(result),
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e)))
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{e}")))
         }
     })
 }
 
+#[allow(dead_code)] // Benchmark function available for Python but not directly called from Rust
 #[pyfunction]
 #[pyo3(signature = (database_path, pool_config = None, batch_config = None, num_events = 50000, concurrency = 20))]
 pub fn benchmark_integrated_performance<'py>(
@@ -697,11 +706,12 @@ pub fn benchmark_integrated_performance<'py>(
     pyo3_asyncio::tokio::future_into_py(py, async move {
         match benchmark_integrated_batch_and_pool(database_path, pool_config, batch_config, num_events, concurrency).await {
             Ok(result) => Ok(result),
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e)))
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{e}")))
         }
     })
 }
 
+#[allow(dead_code)] // Internal benchmark function used by Python wrappers
 async fn benchmark_batch_performance(
     database_path: String,
     batch_config: BatchConfig,
@@ -715,10 +725,10 @@ async fn benchmark_batch_performance(
     
     // Create connection pool for batch processor
     let pool = Arc::new(ConnectionPool::new(database_path, PoolConfig::high_performance()).await?);
-    let processor = Arc::new(EventBatchProcessor::new(pool));
+    let _processor = Arc::new(EventBatchProcessor::new(pool));
     
     // Create and start batch processor
-    let mut batch_processor: BatchProcessor<eventuali_core::Event> = BatchProcessor::new(batch_config);
+    let batch_processor: BatchProcessor<eventuali_core::Event> = BatchProcessor::new(batch_config);
         // .with_processor(processor);
     
     // batch_processor.start().await?;
@@ -734,9 +744,9 @@ async fn benchmark_batch_performance(
         join_set.spawn(async move {
             let mut successful = 0;
             for event_id in 0..events_per_task {
-                let event = Event {
+                let _event = Event {
                     id: uuid::Uuid::new_v4(),
-                    aggregate_id: format!("batch_test_{}_{}", task_id, event_id),
+                    aggregate_id: format!("batch_test_{task_id}_{event_id}"),
                     aggregate_type: "TestAggregate".to_string(),
                     event_type: "TestEvent".to_string(),
                     event_version: 1,
@@ -794,6 +804,7 @@ async fn benchmark_batch_performance(
     Ok(results)
 }
 
+#[allow(dead_code)] // Internal benchmark function used by Python wrappers
 async fn benchmark_integrated_batch_and_pool(
     database_path: String,
     pool_config: PoolConfig,
@@ -808,10 +819,10 @@ async fn benchmark_integrated_batch_and_pool(
     
     // Create optimized connection pool
     let pool = Arc::new(ConnectionPool::new(database_path, pool_config).await?);
-    let processor = Arc::new(EventBatchProcessor::new(pool.clone()));
+    let _processor = Arc::new(EventBatchProcessor::new(pool.clone()));
     
     // Create batch processor with connection pool
-    let mut batch_processor: BatchProcessor<eventuali_core::Event> = BatchProcessor::new(batch_config);
+    let batch_processor: BatchProcessor<eventuali_core::Event> = BatchProcessor::new(batch_config);
         // .with_connection_pool(pool.clone())
         // .with_processor(processor);
     
@@ -830,9 +841,9 @@ async fn benchmark_integrated_batch_and_pool(
             let mut successful = 0;
             
             for event_id in 0..events_per_task {
-                let event = Event {
+                let _event = Event {
                     id: uuid::Uuid::new_v4(),
-                    aggregate_id: format!("integrated_test_{}_{}", task_id, event_id),
+                    aggregate_id: format!("integrated_test_{task_id}_{event_id}"),
                     aggregate_type: "HighThroughputAggregate".to_string(),
                     event_type: "HighThroughputEvent".to_string(),
                     event_version: 1,
@@ -840,7 +851,7 @@ async fn benchmark_integrated_batch_and_pool(
                     data: eventuali_core::event::EventData::Json(serde_json::json!({
                         "batch_id": task_id, 
                         "event_id": event_id,
-                        "payload": format!("data_{}", event_id)
+                        "payload": format!("data_{event_id}")
                     })),
                     metadata: eventuali_core::event::EventMetadata {
                         causation_id: None,
@@ -1509,7 +1520,7 @@ pub fn benchmark_wal_configurations<'py>(
                     .collect();
                 Ok(py_results)
             },
-            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{}", e)))
+            Err(e) => Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>(format!("{e}")))
         }
     })
 }

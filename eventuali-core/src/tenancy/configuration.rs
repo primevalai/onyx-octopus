@@ -13,25 +13,25 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+
+/// Type alias for change listener callback
+pub type ChangeListener = Box<dyn Fn(&ConfigurationChangeEvent) + Send + Sync>;
 use serde_json::Value;
 
-use super::tenant::{TenantId, TenantError};
+use super::tenant::TenantId;
 use crate::error::{EventualiError, Result};
 
 /// Configuration environments for environment-specific overrides
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Default)]
 pub enum ConfigurationEnvironment {
     Development,
     Staging,
+    #[default]
     Production,
     Testing,
 }
 
-impl Default for ConfigurationEnvironment {
-    fn default() -> Self {
-        ConfigurationEnvironment::Production
-    }
-}
 
 /// Configuration data types with validation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -62,7 +62,7 @@ impl ConfigurationValue {
                 }
                 if let Some(pattern) = pattern {
                     if !regex::Regex::new(pattern).unwrap().is_match(s) {
-                        return Err(EventualiError::Tenant(format!("String doesn't match pattern: {}", pattern)));
+                        return Err(EventualiError::Tenant(format!("String doesn't match pattern: {pattern}")));
                     }
                 }
                 Ok(())
@@ -70,12 +70,12 @@ impl ConfigurationValue {
             (ConfigurationValue::Integer(i), ConfigurationSchema::Integer { min, max }) => {
                 if let Some(min_val) = min {
                     if i < min_val {
-                        return Err(EventualiError::Tenant(format!("Integer too small: {} < {}", i, min_val)));
+                        return Err(EventualiError::Tenant(format!("Integer too small: {i} < {min_val}")));
                     }
                 }
                 if let Some(max_val) = max {
                     if i > max_val {
-                        return Err(EventualiError::Tenant(format!("Integer too large: {} > {}", i, max_val)));
+                        return Err(EventualiError::Tenant(format!("Integer too large: {i} > {max_val}")));
                     }
                 }
                 Ok(())
@@ -83,12 +83,12 @@ impl ConfigurationValue {
             (ConfigurationValue::Float(f), ConfigurationSchema::Float { min, max }) => {
                 if let Some(min_val) = min {
                     if f < min_val {
-                        return Err(EventualiError::Tenant(format!("Float too small: {} < {}", f, min_val)));
+                        return Err(EventualiError::Tenant(format!("Float too small: {f} < {min_val}")));
                     }
                 }
                 if let Some(max_val) = max {
                     if f > max_val {
-                        return Err(EventualiError::Tenant(format!("Float too large: {} > {}", f, max_val)));
+                        return Err(EventualiError::Tenant(format!("Float too large: {f} > {max_val}")));
                     }
                 }
                 Ok(())
@@ -114,7 +114,7 @@ impl ConfigurationValue {
                 // Check required fields
                 for req_field in required {
                     if !obj.contains_key(req_field) {
-                        return Err(EventualiError::Tenant(format!("Required field missing: {}", req_field)));
+                        return Err(EventualiError::Tenant(format!("Required field missing: {req_field}")));
                     }
                 }
                 // Validate each property
@@ -408,7 +408,7 @@ pub struct TenantConfigurationManager {
     current_environment: ConfigurationEnvironment,
     hot_reload_enabled: bool,
     validation_enabled: bool,
-    change_listeners: Arc<RwLock<Vec<Box<dyn Fn(&ConfigurationChangeEvent) + Send + Sync>>>>,
+    change_listeners: Arc<RwLock<Vec<ChangeListener>>>,
 }
 
 impl TenantConfigurationManager {
@@ -510,7 +510,7 @@ impl TenantConfigurationManager {
         environment: Option<ConfigurationEnvironment>,
     ) -> Option<ConfigurationValue> {
         let env = environment.unwrap_or_else(|| self.current_environment.clone());
-        let cache_key = format!("{}:{:?}", key, env);
+        let cache_key = format!("{key}:{env:?}");
 
         // Check cache first
         {
@@ -581,7 +581,7 @@ impl TenantConfigurationManager {
     pub fn apply_template(&self, template_name: &str, environment: ConfigurationEnvironment) -> Result<usize> {
         let templates = self.templates.read().unwrap();
         let template = templates.get(template_name)
-            .ok_or_else(|| EventualiError::Tenant(format!("Template not found: {}", template_name)))?;
+            .ok_or_else(|| EventualiError::Tenant(format!("Template not found: {template_name}")))?;
 
         let resolved_entries = template.resolve_with_inheritance(&templates)?;
         drop(templates); // Release read lock

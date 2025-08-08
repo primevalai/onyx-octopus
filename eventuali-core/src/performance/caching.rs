@@ -29,6 +29,7 @@ impl Default for CacheConfig {
 
 /// Cache manager
 pub struct CacheManager {
+    #[allow(dead_code)] // Cache configuration settings (stored but not currently accessed in implementation)
     config: CacheConfig,
 }
 

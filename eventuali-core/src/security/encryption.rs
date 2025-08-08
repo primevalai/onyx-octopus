@@ -138,7 +138,7 @@ impl EventEncryption {
         // Generate a 12-byte IV using system time and random data
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| EventualiError::Encryption(format!("Time error: {}", e)))?
+            .map_err(|e| EventualiError::Encryption(format!("Time error: {e}")))?
             .as_nanos() as u64;
         
         let mut iv = Vec::with_capacity(12);
@@ -161,7 +161,7 @@ impl EventEncryption {
         
         let ciphertext = cipher
             .encrypt(nonce, plaintext)
-            .map_err(|e| EventualiError::Encryption(format!("AES-256-GCM encryption failed: {}", e)))?;
+            .map_err(|e| EventualiError::Encryption(format!("AES-256-GCM encryption failed: {e}")))?;
         
         // Extract tag (last 16 bytes)
         let tag_start = ciphertext.len() - 16;
@@ -185,7 +185,7 @@ impl EventEncryption {
         
         let plaintext = cipher
             .decrypt(nonce, full_ciphertext.as_ref())
-            .map_err(|e| EventualiError::Encryption(format!("AES-256-GCM decryption failed: {}", e)))?;
+            .map_err(|e| EventualiError::Encryption(format!("AES-256-GCM decryption failed: {e}")))?;
         
         Ok(plaintext)
     }
@@ -246,7 +246,7 @@ impl KeyManager {
     /// Get a key by ID
     pub fn get_key(&self, key_id: &str) -> Result<&EncryptionKey> {
         self.keys.get(key_id).ok_or_else(|| {
-            EventualiError::Encryption(format!("Key not found: {}", key_id))
+            EventualiError::Encryption(format!("Key not found: {key_id}"))
         })
     }
 
@@ -254,7 +254,7 @@ impl KeyManager {
     pub fn set_default_key(&mut self, key_id: &str) -> Result<()> {
         if !self.keys.contains_key(key_id) {
             return Err(EventualiError::Encryption(
-                format!("Key not found: {}", key_id)
+                format!("Key not found: {key_id}")
             ));
         }
         self.default_key_id = key_id.to_string();
@@ -268,7 +268,7 @@ impl KeyManager {
         // Use system time as seed for key generation
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map_err(|e| EventualiError::Encryption(format!("Time error: {}", e)))?
+            .map_err(|e| EventualiError::Encryption(format!("Time error: {e}")))?
             .as_nanos();
         
         // Generate key using SHA-256 of timestamp and additional entropy
@@ -308,7 +308,7 @@ impl EncryptedEventData {
     pub fn from_base64(data: &str) -> Result<Self> {
         let bytes = general_purpose::STANDARD
             .decode(data)
-            .map_err(|e| EventualiError::Encryption(format!("Base64 decode error: {}", e)))?;
+            .map_err(|e| EventualiError::Encryption(format!("Base64 decode error: {e}")))?;
         
         serde_json::from_slice(&bytes)
             .map_err(EventualiError::from)

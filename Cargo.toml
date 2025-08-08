@@ -19,6 +19,7 @@ tracing-subscriber = "0.3"
 prost = "0.13"
 prost-types = "0.13"
 async-trait = "0.1"
+futures = "0.3"
 rusqlite = { version = "0.32", features = ["bundled", "serde_json"] }
 
 # Observability dependencies
@@ -31,6 +32,10 @@ metrics = "0.21"
 metrics-exporter-prometheus = "0.13"
 log = "0.4"
 tracing-log = "0.2"
+
+# Profiling dependencies  
+pprof = { version = "0.13", features = ["flamegraph"] }
+criterion = "0.5"
 
 [workspace.dependencies.pyo3]
 version = "0.20"

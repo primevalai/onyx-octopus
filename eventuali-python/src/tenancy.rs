@@ -4,17 +4,15 @@ use pyo3::exceptions::PyRuntimeError;
 use eventuali_core::tenancy::{
     TenantId as CoreTenantId, TenantInfo as CoreTenantInfo, TenantConfig as CoreTenantConfig,
     TenantMetadata as CoreTenantMetadata, ResourceLimits as CoreResourceLimits,
-    TenantManager as CoreTenantManager, TenantAwareEventStorage as CoreTenantAwareEventStorage,
-    TenantStorageMetrics as CoreTenantStorageMetrics, TenantEventBatch as CoreTenantEventBatch,
+    TenantManager as CoreTenantManager,
+    TenantStorageMetrics as CoreTenantStorageMetrics,
     ResourceType as CoreResourceType, QuotaTier as CoreQuotaTier, QuotaCheckResult as CoreQuotaCheckResult,
     EnhancedResourceUsage as CoreEnhancedResourceUsage, QuotaAlert as CoreQuotaAlert,
-    AlertType as CoreAlertType, BillingAnalytics as CoreBillingAnalytics, UsageTrends as CoreUsageTrends,
+    AlertType as CoreAlertType, BillingAnalytics as CoreBillingAnalytics,
     TenantConfigurationManager as CoreTenantConfigurationManager, ConfigurationValue as CoreConfigurationValue,
-    ConfigurationSchema as CoreConfigurationSchema, ConfigurationEntry as CoreConfigurationEntry,
-    ConfigurationEnvironment as CoreConfigurationEnvironment, ConfigurationMetrics as CoreConfigurationMetrics,
+    ConfigurationEnvironment as CoreConfigurationEnvironment, ConfigurationSchema as CoreConfigurationSchema,
     TenantMetricsCollector as CoreTenantMetricsCollector, MetricDataPoint as CoreMetricDataPoint,
-    TenantHealthScore as CoreTenantHealthScore, HealthStatus as CoreHealthStatus,
-    MetricAlert as CoreMetricAlert, SlaResult as CoreSlaResult
+    TenantHealthScore as CoreTenantHealthScore, HealthStatus as CoreHealthStatus
 };
 use crate::error::map_rust_error_to_python;
 use std::collections::HashMap;
@@ -32,7 +30,7 @@ impl PyTenantId {
     #[new]
     fn new(id: String) -> PyResult<Self> {
         let tenant_id = CoreTenantId::new(id)
-            .map_err(|e| PyRuntimeError::new_err(format!("Tenant ID error: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("Tenant ID error: {e}")))?;
         Ok(Self { inner: tenant_id })
     }
     
@@ -429,7 +427,7 @@ impl PyTenantManager {
             "streams" => eventuali_core::tenancy::quota::ResourceType::Streams,
             "projections" => eventuali_core::tenancy::quota::ResourceType::Projections,
             "aggregates" => eventuali_core::tenancy::quota::ResourceType::Aggregates,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid resource type: {}", resource_type))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid resource type: {resource_type}"))),
         };
         
         self.inner.check_tenant_quota(&tenant_id.inner, resource_type, amount)
@@ -448,7 +446,7 @@ impl PyTenantManager {
             "streams" => eventuali_core::tenancy::quota::ResourceType::Streams,
             "projections" => eventuali_core::tenancy::quota::ResourceType::Projections,
             "aggregates" => eventuali_core::tenancy::quota::ResourceType::Aggregates,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid resource type: {}", resource_type))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid resource type: {resource_type}"))),
         };
         
         self.inner.record_tenant_usage(&tenant_id.inner, resource_type, amount)
@@ -608,7 +606,7 @@ impl PyQuotaTier {
             "standard" => CoreQuotaTier::Standard,
             "professional" => CoreQuotaTier::Professional,
             "enterprise" => CoreQuotaTier::Enterprise,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid quota tier: {}", tier))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid quota tier: {tier}"))),
         };
         
         Ok(Self { inner: tier })
@@ -664,7 +662,7 @@ impl PyAlertType {
             "critical" => CoreAlertType::Critical,
             "exceeded" => CoreAlertType::Exceeded,
             "violation" => CoreAlertType::Violation,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid alert type: {}", alert_type))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid alert type: {alert_type}"))),
         };
         
         Ok(Self { inner: alert_type })
@@ -838,7 +836,7 @@ impl PyBillingAnalytics {
         Python::with_gil(|py| {
             let dict = PyDict::new(py);
             for (resource_type, cost) in &self.inner.overage_costs {
-                let _ = dict.set_item(format!("{:?}", resource_type).to_lowercase(), cost);
+                let _ = dict.set_item(format!("{resource_type:?}").to_lowercase(), cost);
             }
             dict.into_py(py)
         })
@@ -849,7 +847,7 @@ impl PyBillingAnalytics {
         Python::with_gil(|py| {
             let dict = PyDict::new(py);
             for (resource_type, cost) in &self.inner.cost_breakdown {
-                let _ = dict.set_item(format!("{:?}", resource_type).to_lowercase(), cost);
+                let _ = dict.set_item(format!("{resource_type:?}").to_lowercase(), cost);
             }
             dict.into_py(py)
         })
@@ -995,7 +993,7 @@ impl PyConfigurationEnvironment {
             "staging" => CoreConfigurationEnvironment::Staging,
             "production" => CoreConfigurationEnvironment::Production,
             "testing" => CoreConfigurationEnvironment::Testing,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid environment: {}", env))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid environment: {env}"))),
         };
         
         Ok(Self { inner: environment })
@@ -1071,13 +1069,13 @@ impl PyConfigurationValue {
     fn to_json(&self) -> PyResult<String> {
         let json_value = self.inner.to_json();
         serde_json::to_string(&json_value)
-            .map_err(|e| PyRuntimeError::new_err(format!("JSON serialization error: {}", e)))
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON serialization error: {e}")))
     }
     
     #[staticmethod]
     fn from_json(json_str: &str) -> PyResult<Self> {
         let json_value: serde_json::Value = serde_json::from_str(json_str)
-            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {e}")))?;
         
         Ok(Self {
             inner: CoreConfigurationValue::from_json(&json_value)
@@ -1104,31 +1102,56 @@ impl PyTenantConfigurationManager {
         }
     }
     
+    #[pyo3(signature = (key, value, changed_by, change_reason, environment=None))]
     fn set_configuration(
         &self,
         key: String,
         value: PyConfigurationValue,
-        environment: Option<PyConfigurationEnvironment>,
         changed_by: String,
         change_reason: String,
+        environment: Option<PyConfigurationEnvironment>,
     ) -> PyResult<()> {
-        // Create a basic string schema for simplicity
-        let schema = CoreConfigurationSchema::String {
-            min_length: None,
-            max_length: None,
-            pattern: None,
+        // Create a configuration value and schema from the Python value
+        let (config_value, schema) = match &value.inner {
+            CoreConfigurationValue::String(s) => (
+                CoreConfigurationValue::String(s.clone()),
+                CoreConfigurationSchema::String {
+                    min_length: None,
+                    max_length: None,
+                    pattern: None,
+                }
+            ),
+            CoreConfigurationValue::Integer(i) => (
+                CoreConfigurationValue::Integer(*i),
+                CoreConfigurationSchema::Integer {
+                    min: None,
+                    max: None,
+                }
+            ),
+            CoreConfigurationValue::Float(f) => (
+                CoreConfigurationValue::Float(*f),
+                CoreConfigurationSchema::Float {
+                    min: None,
+                    max: None,
+                }
+            ),
+            CoreConfigurationValue::Boolean(b) => (
+                CoreConfigurationValue::Boolean(*b),
+                CoreConfigurationSchema::Boolean
+            ),
+            _ => return Err(PyRuntimeError::new_err("Unsupported configuration value type")),
         };
         
         let env = environment.map(|e| e.inner);
         
         self.inner.set_configuration(
             key,
-            value.inner,
+            config_value,
             schema,
             env,
             changed_by,
             change_reason,
-        ).map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {}", e)))
+        ).map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {e}")))
     }
     
     fn get_configuration(
@@ -1158,16 +1181,17 @@ impl PyTenantConfigurationManager {
         })
     }
     
+    #[pyo3(signature = (key, changed_by, change_reason, environment=None))]
     fn delete_configuration(
         &self,
         key: &str,
-        environment: Option<PyConfigurationEnvironment>,
         changed_by: String,
         change_reason: String,
+        environment: Option<PyConfigurationEnvironment>,
     ) -> PyResult<bool> {
         let env = environment.map(|e| e.inner);
         self.inner.delete_configuration(key, env, changed_by, change_reason)
-            .map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {}", e)))
+            .map_err(|e| PyRuntimeError::new_err(format!("Configuration error: {e}")))
     }
     
     fn export_configurations(
@@ -1186,10 +1210,10 @@ impl PyTenantConfigurationManager {
         changed_by: String,
     ) -> PyResult<usize> {
         let json_value: serde_json::Value = serde_json::from_str(json_data)
-            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {}", e)))?;
+            .map_err(|e| PyRuntimeError::new_err(format!("JSON parsing error: {e}")))?;
         
         self.inner.import_configurations(&json_value, environment.inner, changed_by)
-            .map_err(|e| PyRuntimeError::new_err(format!("Import error: {}", e)))
+            .map_err(|e| PyRuntimeError::new_err(format!("Import error: {e}")))
     }
     
     fn get_metrics(&self) -> Py<PyDict> {
@@ -1331,9 +1355,8 @@ impl PyMetricDataPoint {
         }
     }
     
-    fn with_label(mut self, key: String, value: String) -> Self {
-        self.inner = self.inner.with_label(key, value);
-        self
+    fn with_label(&mut self, key: String, value: String) {
+        self.inner.add_label(key, value);
     }
     
     #[getter]
@@ -1427,7 +1450,7 @@ impl PyTenantMetricsCollector {
     ) -> PyResult<Vec<PyMetricDataPoint>> {
         let start_time = if let Some(start_str) = start {
             Some(chrono::DateTime::parse_from_rfc3339(&start_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {e}")))?
                 .with_timezone(&chrono::Utc))
         } else {
             None
@@ -1435,7 +1458,7 @@ impl PyTenantMetricsCollector {
         
         let end_time = if let Some(end_str) = end {
             Some(chrono::DateTime::parse_from_rfc3339(&end_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {e}")))?
                 .with_timezone(&chrono::Utc))
         } else {
             None
@@ -1495,15 +1518,15 @@ impl PyTenantMetricsCollector {
             "json" => eventuali_core::tenancy::metrics::ExportFormat::Json,
             "csv" => eventuali_core::tenancy::metrics::ExportFormat::Csv,
             "prometheus" => eventuali_core::tenancy::metrics::ExportFormat::Prometheus,
-            _ => return Err(PyRuntimeError::new_err(format!("Invalid export format: {}", format))),
+            _ => return Err(PyRuntimeError::new_err(format!("Invalid export format: {format}"))),
         };
         
         let time_range_parsed = if let Some((start_str, end_str)) = time_range {
             let start = chrono::DateTime::parse_from_rfc3339(&start_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid start time: {e}")))?
                 .with_timezone(&chrono::Utc);
             let end = chrono::DateTime::parse_from_rfc3339(&end_str)
-                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {}", e)))?
+                .map_err(|e| PyRuntimeError::new_err(format!("Invalid end time: {e}")))?
                 .with_timezone(&chrono::Utc);
             Some((start, end))
         } else {
@@ -1511,6 +1534,6 @@ impl PyTenantMetricsCollector {
         };
         
         self.inner.export_metrics(export_format, time_range_parsed)
-            .map_err(|e| PyRuntimeError::new_err(format!("Export error: {}", e)))
+            .map_err(|e| PyRuntimeError::new_err(format!("Export error: {e}")))
     }
 }

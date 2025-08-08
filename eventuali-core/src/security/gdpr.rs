@@ -10,6 +10,7 @@ pub struct GdprManager {
     data_subjects: BTreeMap<String, DataSubject>,
     processing_activities: Vec<ProcessingActivity>,
     consent_records: BTreeMap<String, ConsentRecord>,
+    #[allow(dead_code)] // Registry for tracking lawful basis for data processing (GDPR compliance)
     lawful_basis_registry: BTreeMap<String, LawfulBasis>,
     retention_policies: BTreeMap<String, RetentionPolicy>,
     breach_notifications: Vec<BreachNotification>,
@@ -719,7 +720,7 @@ impl GdprManager {
         let request_id = Uuid::new_v4().to_string();
         let now = Utc::now();
 
-        let request_details = format!("Data portability request in format: {:?}", export_format);
+        let request_details = format!("Data portability request in format: {export_format:?}");
 
         let request = SubjectRightsRequest {
             request_id: request_id.clone(),
@@ -932,7 +933,7 @@ impl GdprManager {
             new_consents_given: period_consents,
             consents_withdrawn: self.consent_records.values()
                 .filter(|c| matches!(c.consent_status, ConsentStatus::Withdrawn) && 
-                         c.withdrawn_at.map_or(false, |w| w >= start_date && w <= end_date))
+                         c.withdrawn_at.is_some_and(|w| w >= start_date && w <= end_date))
                 .count(),
             subject_requests_received: period_requests.len(),
             subject_requests_by_type: requests_by_type,
@@ -942,7 +943,7 @@ impl GdprManager {
                 .count(),
             data_breaches_reported: period_breaches.len(),
             breaches_reported_within_72h: period_breaches.iter()
-                .filter(|b| b.reported_to_authority_at.map_or(false, |r| r <= b.detected_at + Duration::hours(72)))
+                .filter(|b| b.reported_to_authority_at.is_some_and(|r| r <= b.detected_at + Duration::hours(72)))
                 .count(),
             processing_activities_documented: self.processing_activities.len(),
             dpias_completed: self.data_protection_impact_assessments.len(),
@@ -951,7 +952,7 @@ impl GdprManager {
                                                             ImplementationLevel::OptimallyImplemented))
                 .count(),
             data_exports_fulfilled: self.data_exports.iter()
-                .filter(|e| e.export_completed_at.map_or(false, |c| c >= start_date && c <= end_date))
+                .filter(|e| e.export_completed_at.is_some_and(|c| c >= start_date && c <= end_date))
                 .count(),
             deletions_executed: self.deletion_log.iter()
                 .filter(|d| d.deletion_completed_at >= start_date && d.deletion_completed_at <= end_date)
@@ -1091,7 +1092,7 @@ impl GdprManager {
             .count();
 
         if overdue_breaches > 0 {
-            risks.push(format!("{} data breaches not reported within 72 hours", overdue_breaches));
+            risks.push(format!("{overdue_breaches} data breaches not reported within 72 hours"));
         }
 
         // Check for overdue subject requests
@@ -1104,7 +1105,7 @@ impl GdprManager {
             .count();
 
         if overdue_requests > 0 {
-            risks.push(format!("{} subject rights requests overdue", overdue_requests));
+            risks.push(format!("{overdue_requests} subject rights requests overdue"));
         }
 
         // Check for expired consents
@@ -1113,7 +1114,7 @@ impl GdprManager {
             .count();
 
         if expired_consents > 0 {
-            risks.push(format!("{} consent records have expired", expired_consents));
+            risks.push(format!("{expired_consents} consent records have expired"));
         }
 
         if risks.is_empty() {

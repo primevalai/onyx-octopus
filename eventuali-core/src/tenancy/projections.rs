@@ -264,7 +264,14 @@ impl TenantProjectionManager {
 #[derive(Debug, Clone)]
 pub struct TenantProjectionRegistry {
     projections: HashMap<String, ProjectionRegistration>,
+    #[allow(dead_code)] // Registry creation timestamp for auditing (stored but not currently accessed)
     created_at: DateTime<Utc>,
+}
+
+impl Default for TenantProjectionRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TenantProjectionRegistry {
@@ -308,10 +315,15 @@ impl TenantProjectionRegistry {
 
 #[derive(Debug, Clone)]
 struct ProjectionRegistration {
+    #[allow(dead_code)] // Name stored for projection identification (used in registry operations but not directly accessed)
     name: String,
+    #[allow(dead_code)] // Tenant ID for isolation tracking (stored but not currently queried in registration info)
     tenant_id: TenantId,
+    #[allow(dead_code)] // Registration timestamp for audit purposes (stored but not currently accessed)
     registered_at: DateTime<Utc>,
+    #[allow(dead_code)] // Last processing time for monitoring (stored but not actively used)
     last_processed: Option<DateTime<Utc>>,
+    #[allow(dead_code)] // Event count tracking for analytics (stored but not currently queried)
     event_count: u64,
     status: ProjectionStatus,
 }
@@ -319,7 +331,9 @@ struct ProjectionRegistration {
 #[derive(Debug, Clone)]
 enum ProjectionStatus {
     Active,
+    #[allow(dead_code)] // Paused status for future projection management features
     Paused,
+    #[allow(dead_code)] // Error status for future error handling and recovery
     Error,
 }
 
@@ -336,6 +350,12 @@ pub struct TenantProjectionMetrics {
     pub successful_rebuilds: u64,
     pub last_processed: Option<DateTime<Utc>>,
     pub last_rebuild: Option<DateTime<Utc>>,
+}
+
+impl Default for TenantProjectionMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TenantProjectionMetrics {
@@ -450,6 +470,7 @@ pub mod sample_projections {
     
     /// A simple analytics projection that counts events by type
     pub struct EventAnalyticsProjection {
+        #[allow(dead_code)] // Projection name for identification (stored but not currently accessed)
         name: String,
         data: Arc<RwLock<HashMap<String, EventTypeCount>>>,
     }
@@ -471,7 +492,7 @@ pub mod sample_projections {
     impl Projection for EventAnalyticsProjection {
         async fn handle_event(&self, event: &Event) -> Result<()> {
             let mut data = self.data.write().unwrap();
-            let count = data.entry(event.event_type.clone()).or_insert(EventTypeCount::new());
+            let count = data.entry(event.event_type.clone()).or_default();
             
             count.total_count += 1;
             count.last_seen = Some(Utc::now());
@@ -509,6 +530,12 @@ pub mod sample_projections {
         pub sample_data: Option<Value>,
     }
     
+    impl Default for EventTypeCount {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl EventTypeCount {
         pub fn new() -> Self {
             Self {
@@ -521,6 +548,7 @@ pub mod sample_projections {
     
     /// A user activity projection that tracks user actions
     pub struct UserActivityProjection {
+        #[allow(dead_code)] // Projection name for identification (stored but not currently accessed)
         name: String,
         data: Arc<RwLock<HashMap<String, UserActivity>>>,
     }

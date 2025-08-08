@@ -163,6 +163,12 @@ pub struct PySubscriptionBuilder {
     event_type_filter: Option<String>,
 }
 
+impl Default for PySubscriptionBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[pymethods]
 impl PySubscriptionBuilder {
     #[new]

@@ -99,7 +99,7 @@ pub enum ComplianceTag {
     SOX,        // Sarbanes-Oxley
     GDPR,       // General Data Protection Regulation
     HIPAA,      // Health Insurance Portability and Accountability Act
-    PCI_DSS,    // Payment Card Industry Data Security Standard
+    PciDss,     // Payment Card Industry Data Security Standard
     ISO27001,   // Information Security Management
     NIST,       // National Institute of Standards and Technology
     COBIT,      // Control Objectives for Information and Related Technologies
@@ -323,7 +323,7 @@ impl AuditManager {
         self.check_alert_rules(&entry);
 
         // Apply retention policy if needed
-        if self.audit_entries.len() % 1000 == 0 {
+        if self.audit_entries.len().is_multiple_of(1000) {
             self.apply_retention_policy();
         }
 
@@ -386,7 +386,7 @@ impl AuditManager {
     ) -> Result<String> {
         let mut metadata = HashMap::new();
         metadata.insert("operation".to_string(), operation.clone());
-        metadata.insert("data_classification".to_string(), format!("{:?}", data_classification));
+        metadata.insert("data_classification".to_string(), format!("{data_classification:?}"));
 
         let outcome = if success {
             AuditOutcome::Success
@@ -618,7 +618,7 @@ impl AuditManager {
             AuditEventType::DataAccess | AuditEventType::DataModification => {
                 tags.insert(ComplianceTag::GDPR);
                 if resource.contains("payment") || resource.contains("card") {
-                    tags.insert(ComplianceTag::PCI_DSS);
+                    tags.insert(ComplianceTag::PciDss);
                 }
                 if resource.contains("health") || resource.contains("medical") {
                     tags.insert(ComplianceTag::HIPAA);
@@ -688,7 +688,7 @@ impl AuditManager {
             .count();
 
         if old_entries > 0 {
-            eprintln!("RETENTION: {} entries eligible for archival", old_entries);
+            eprintln!("RETENTION: {old_entries} entries eligible for archival");
         }
     }
 
@@ -796,7 +796,7 @@ impl AuditManager {
                 recommendations.push("Strengthen access controls for healthcare data".to_string());
                 recommendations.push("Implement minimum necessary access principles".to_string());
             }
-            ComplianceTag::PCI_DSS => {
+            ComplianceTag::PciDss => {
                 recommendations.push("Enhance monitoring of payment card data access".to_string());
                 recommendations.push("Implement stronger encryption for card data transmission".to_string());
             }
@@ -816,7 +816,7 @@ impl AuditManager {
                 ComplianceTag::SOX => self.add_sox_rules(),
                 ComplianceTag::GDPR => self.add_gdpr_rules(),
                 ComplianceTag::HIPAA => self.add_hipaa_rules(),
-                ComplianceTag::PCI_DSS => self.add_pci_rules(),
+                ComplianceTag::PciDss => self.add_pci_rules(),
                 _ => {}
             }
         }
@@ -922,34 +922,34 @@ impl AuditSearchIndex {
 
     fn add_entry(&mut self, index: usize, entry: &AuditTrailEntry) {
         self.by_user.entry(entry.user_id.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(index);
 
         self.by_resource.entry(entry.resource.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(index);
 
         self.by_event_type.entry(entry.event_type.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(index);
 
         self.by_timestamp.entry(entry.timestamp)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(index);
 
         self.by_risk_level.entry(entry.risk_level.clone())
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(index);
 
         for tag in &entry.compliance_tags {
             self.by_compliance_tag.entry(tag.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(index);
         }
 
         if let Some(ip) = &entry.ip_address {
             self.by_ip_address.entry(ip.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(index);
         }
     }

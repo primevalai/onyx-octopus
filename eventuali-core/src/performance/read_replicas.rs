@@ -27,6 +27,7 @@ impl Default for ReplicaConfig {
 
 /// Read replica manager
 pub struct ReadReplicaManager {
+    #[allow(dead_code)] // Replica configuration settings (stored but not currently accessed in implementation)
     config: ReplicaConfig,
 }
 

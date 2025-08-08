@@ -175,39 +175,39 @@ impl WalOptimizer {
     pub fn optimize_connection(&self, conn: &SqliteConnection) -> Result<(), EventualiError> {
         // Set journal mode
         let journal_mode = self.journal_mode_to_string(&self.config.journal_mode);
-        conn.execute(&format!("PRAGMA journal_mode = {}", journal_mode), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set journal mode: {}", e)))?;
+        conn.execute(&format!("PRAGMA journal_mode = {journal_mode}"), [])
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set journal mode: {e}")))?;
 
         // Set synchronous mode
         let sync_mode = self.sync_mode_to_string(&self.config.synchronous_mode);
-        conn.execute(&format!("PRAGMA synchronous = {}", sync_mode), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set synchronous mode: {}", e)))?;
+        conn.execute(&format!("PRAGMA synchronous = {sync_mode}"), [])
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set synchronous mode: {e}")))?;
 
         // Set cache size
         conn.execute(&format!("PRAGMA cache_size = {}", self.config.cache_size_kb), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set cache size: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set cache size: {e}")))?;
 
         // Set temp store mode
         let temp_store = self.temp_store_to_string(&self.config.temp_store);
-        conn.execute(&format!("PRAGMA temp_store = {}", temp_store), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set temp store: {}", e)))?;
+        conn.execute(&format!("PRAGMA temp_store = {temp_store}"), [])
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set temp store: {e}")))?;
 
         // Set memory mapping size
         conn.execute(&format!("PRAGMA mmap_size = {}", self.config.mmap_size_mb * 1024 * 1024), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set mmap size: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set mmap size: {e}")))?;
 
         // Set page size (only effective on new databases)
         conn.execute(&format!("PRAGMA page_size = {}", self.config.page_size), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set page size: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set page size: {e}")))?;
 
         // Set auto-vacuum mode
         let auto_vacuum = self.auto_vacuum_to_string(&self.config.auto_vacuum);
-        conn.execute(&format!("PRAGMA auto_vacuum = {}", auto_vacuum), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set auto vacuum: {}", e)))?;
+        conn.execute(&format!("PRAGMA auto_vacuum = {auto_vacuum}"), [])
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set auto vacuum: {e}")))?;
 
         // Set WAL auto-checkpoint
         conn.execute(&format!("PRAGMA wal_autocheckpoint = {}", self.config.wal_autocheckpoint), [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to set WAL autocheckpoint: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Failed to set WAL autocheckpoint: {e}")))?;
 
         Ok(())
     }
@@ -217,7 +217,7 @@ impl WalOptimizer {
         let start_time = Instant::now();
         
         conn.execute("PRAGMA wal_checkpoint(TRUNCATE)", [])
-            .map_err(|e| EventualiError::Configuration(format!("Failed to checkpoint WAL: {}", e)))?;
+            .map_err(|e| EventualiError::Configuration(format!("Failed to checkpoint WAL: {e}")))?;
 
         let checkpoint_time = start_time.elapsed();
         self.last_checkpoint = Some(Instant::now());
@@ -242,7 +242,7 @@ impl WalOptimizer {
         };
 
         // Query database for additional stats
-        if let Ok(mut stmt) = conn.prepare("PRAGMA wal_checkpoint") {
+        if let Ok(_stmt) = conn.prepare("PRAGMA wal_checkpoint") {
             // This would get WAL file size and other metrics in a real implementation
         }
 
@@ -324,7 +324,7 @@ pub async fn benchmark_wal_configurations(
             SqliteConnection::open_in_memory()
         } else {
             SqliteConnection::open(&database_path)
-        }.map_err(|e| EventualiError::Configuration(format!("Failed to open database: {}", e)))?;
+        }.map_err(|e| EventualiError::Configuration(format!("Failed to open database: {e}")))?;
 
         let mut optimizer = WalOptimizer::new(config.clone());
         optimizer.optimize_connection(&conn)?;
@@ -336,17 +336,17 @@ pub async fn benchmark_wal_configurations(
                 data TEXT,
                 timestamp INTEGER
             )", []
-        ).map_err(|e| EventualiError::Configuration(format!("Failed to create test table: {}", e)))?;
+        ).map_err(|e| EventualiError::Configuration(format!("Failed to create test table: {e}")))?;
 
         // Perform test operations
         for i in 0..num_operations {
             conn.execute(
                 "INSERT INTO test_events (data, timestamp) VALUES (?, ?)",
-                [&format!("test_data_{}", i), &format!("{}", i)]
-            ).map_err(|e| EventualiError::Configuration(format!("Failed to insert test data: {}", e)))?;
+                [&format!("test_data_{i}"), &format!("{i}")]
+            ).map_err(|e| EventualiError::Configuration(format!("Failed to insert test data: {e}")))?;
 
             // Checkpoint periodically
-            if i % 100 == 0 && optimizer.needs_checkpoint() {
+            if i.is_multiple_of(100) && optimizer.needs_checkpoint() {
                 optimizer.checkpoint(&conn)?;
             }
         }

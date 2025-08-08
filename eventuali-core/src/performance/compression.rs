@@ -30,6 +30,7 @@ impl Default for CompressionConfig {
 
 /// Compression manager
 pub struct CompressionManager {
+    #[allow(dead_code)] // Compression configuration settings (stored but not currently accessed in implementation)
     config: CompressionConfig,
 }
 

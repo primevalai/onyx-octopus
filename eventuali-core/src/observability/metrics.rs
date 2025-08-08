@@ -4,9 +4,9 @@
 
 use crate::error::{EventualiError, Result};
 use crate::observability::ObservabilityConfig;
-use metrics::{Key, Label};
+use metrics::Label;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
-use prometheus::{Encoder, TextEncoder};
+// Prometheus encoders - not currently used but available for direct export
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
@@ -185,7 +185,7 @@ impl MetricsCollector {
 
     /// Start a timer for an operation
     pub fn start_timer(&self, operation: &str, labels: MetricLabels) -> OperationTimer {
-        let name = format!("eventuali_{}_duration_seconds", operation);
+        let name = format!("eventuali_{operation}_duration_seconds");
         OperationTimer::new(name, labels)
     }
 
@@ -243,7 +243,7 @@ impl MetricsCollector {
         let labels = MetricLabels::new()
             .with_label("event_type", &metrics.event_type)
             .with_label("aggregate_type", &metrics.aggregate_type)
-            .with_label("success", &metrics.success.to_string());
+            .with_label("success", metrics.success.to_string());
 
         // Increment event counter
         self.increment_counter("eventuali_events_processed_total", labels.clone());
@@ -344,7 +344,7 @@ impl PrometheusExporter {
     pub async fn export_to_file(&self, path: &str) -> Result<()> {
         let metrics = self.get_metrics();
         tokio::fs::write(path, metrics).await
-            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to export metrics: {}", e)))?;
+            .map_err(|e| EventualiError::ObservabilityError(format!("Failed to export metrics: {e}")))?;
         Ok(())
     }
 
