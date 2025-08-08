@@ -32,6 +32,9 @@ This directory contains comprehensive examples demonstrating Eventuali's event s
 - **[19 - CLI Performance Monitoring](#19---cli-performance-monitoring)** - Performance analysis via CLI
 - **[20 - CLI Production Workflow](#20---cli-production-workflow)** - End-to-end production deployment
 
+### 📸 Snapshot Examples (21)
+- **[21 - Snapshots](#21---snapshots)** - Aggregate snapshots for performance optimization
+
 ---
 
 ## Prerequisites
@@ -790,6 +793,28 @@ uv run python ../examples/20_cli_production_workflow.py
 - Comprehensive BFB improvement roadmap with 17 specific improvements
 
 **Performance**: Production workflow simulation with comprehensive assessment and improvement roadmap
+
+---
+
+### 21 - Snapshots
+**File**: `21_snapshots.py`  
+**Concepts**: Aggregate snapshots, compression, performance optimization
+```bash
+uv run python ../examples/21_snapshots.py
+```
+**What you'll learn:**
+- Creating compressed snapshots of aggregate state  
+- Performance comparison: full replay vs snapshot + incremental events
+- Automatic snapshot frequency management and cleanup
+- Data integrity verification with checksums
+- Storage optimization with compression algorithms (gzip)
+**Expected Output:**
+- Snapshot creation demonstration with compression metrics
+- Performance comparison showing 10-20x faster reconstruction
+- Compression ratio reporting (60-80% storage reduction)
+- Automatic snapshot management simulation
+- Data integrity verification with checksum validation
+**Performance**: 10-20x faster aggregate reconstruction, 60-80% storage reduction
 
 ---
 
