@@ -25,6 +25,19 @@ flate2 = "1.0"
 sha2 = "0.10"
 aes-gcm = "0.10"
 pbkdf2 = "0.12"
+rusqlite = { workspace = true }
+
+# Observability dependencies
+opentelemetry = { workspace = true }
+opentelemetry-otlp = { workspace = true }
+opentelemetry_sdk = { workspace = true }
+tracing-opentelemetry = { workspace = true }
+prometheus = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }
+log = { workspace = true }
+tracing-log = { workspace = true }
+tracing-subscriber = { workspace = true }
 
 [build-dependencies]
 prost-build = "0.13"
@@ -33,9 +46,10 @@ prost-build = "0.13"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [features]
-default = ["postgres", "sqlite"]
+default = ["postgres", "sqlite", "observability"]
 postgres = []
 sqlite = []
+observability = []
 
 [[bench]]
 name = "event_store_benchmarks"

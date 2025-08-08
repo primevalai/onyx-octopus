@@ -7,6 +7,10 @@ pub mod streaming;
 pub mod snapshot;
 pub mod security;
 pub mod tenancy;
+pub mod performance;
+
+#[cfg(feature = "observability")]
+pub mod observability;
 
 pub use event::{Event, EventData, EventId, EventMetadata};
 pub use aggregate::{Aggregate, AggregateId, AggregateVersion};
@@ -31,6 +35,20 @@ pub use tenancy::{
     TenantManager, TenantOperations, TenantAwareEventStorage, 
     TenantStorageMetrics, TenantEventBatch, TenantScopedProjection,
     TenantProjectionManager, TenantProjectionRegistry, TenantProjectionMetrics
+};
+pub use performance::{
+    ConnectionPool, PoolConfig, PoolStats,
+    WalConfig, WalOptimizer, WalStats, WalSynchronousMode, WalJournalMode, 
+    TempStoreMode, AutoVacuumMode, benchmark_wal_configurations
+};
+
+#[cfg(feature = "observability")]
+pub use observability::{
+    ObservabilityService, ObservabilityServiceBuilder, ObservabilityConfig,
+    TelemetryProvider, TracingService, TraceContext, EventTrace,
+    MetricsCollector, PrometheusExporter, EventMetrics, PerformanceMetrics,
+    StructuredLogger, LogLevel, LogContext, CorrelationLogger,
+    CorrelationId, CorrelationContext, CorrelationTracker, generate_correlation_id
 };
 
 // Re-export specific backend implementations

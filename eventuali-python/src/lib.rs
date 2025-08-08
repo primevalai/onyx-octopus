@@ -9,6 +9,10 @@ mod streaming;
 mod snapshot;
 mod security;
 mod tenancy;
+mod performance;
+
+#[cfg(feature = "observability")]
+mod observability;
 
 use event_store::PyEventStore;
 use event::PyEvent;
@@ -54,6 +58,13 @@ fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
     
     // Register custom exceptions
     error::register_exceptions(py, m)?;
+    
+    // Register observability classes if the feature is enabled
+    #[cfg(feature = "observability")]
+    observability::register_observability_classes(py, m)?;
+    
+    // Register performance optimization classes
+    performance::register_performance_module(py, m)?;
     
     Ok(())
 }

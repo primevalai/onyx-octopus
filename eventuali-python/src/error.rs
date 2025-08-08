@@ -38,6 +38,9 @@ pub fn map_rust_error_to_python(error: CoreError) -> PyErr {
         CoreError::Tenant(msg) => {
             PyErr::new::<exceptions::PyRuntimeError, _>(format!("Tenant error: {}", msg))
         }
+        CoreError::ObservabilityError(msg) => {
+            PyErr::new::<exceptions::PyRuntimeError, _>(format!("Observability error: {}", msg))
+        }
     }
 }
 

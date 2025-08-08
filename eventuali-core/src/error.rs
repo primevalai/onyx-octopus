@@ -33,4 +33,7 @@ pub enum EventualiError {
     
     #[error("Tenant error: {0}")]
     Tenant(String),
+    
+    #[error("Observability error: {0}")]
+    ObservabilityError(String),
 }
