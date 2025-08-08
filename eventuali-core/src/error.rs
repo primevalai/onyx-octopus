@@ -30,4 +30,7 @@ pub enum EventualiError {
     
     #[error("Encryption error: {0}")]
     Encryption(String),
+    
+    #[error("Tenant error: {0}")]
+    Tenant(String),
 }

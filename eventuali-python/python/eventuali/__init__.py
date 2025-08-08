@@ -18,7 +18,14 @@ from ._eventuali import (
     EncryptionKey,
     EncryptedEventData,
     EncryptionAlgorithm,
-    SecurityUtils
+    SecurityUtils,
+    # Tenancy classes
+    TenantId,
+    TenantInfo,
+    TenantConfig,
+    TenantMetadata,
+    ResourceLimits,
+    TenantManager
 )
 from .event_store import EventStore
 from .event import Event  
@@ -57,6 +64,13 @@ __all__ = [
     "EncryptedEventData",
     "EncryptionAlgorithm",
     "SecurityUtils",
+    # Tenancy
+    "TenantId",
+    "TenantInfo",
+    "TenantConfig",
+    "TenantMetadata",
+    "ResourceLimits",
+    "TenantManager",
     # Exceptions
     "EventualiError",
     "OptimisticConcurrencyError",

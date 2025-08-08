@@ -35,6 +35,9 @@ pub fn map_rust_error_to_python(error: CoreError) -> PyErr {
         CoreError::Encryption(msg) => {
             PyErr::new::<exceptions::PyRuntimeError, _>(format!("Encryption error: {}", msg))
         }
+        CoreError::Tenant(msg) => {
+            PyErr::new::<exceptions::PyRuntimeError, _>(format!("Tenant error: {}", msg))
+        }
     }
 }
 

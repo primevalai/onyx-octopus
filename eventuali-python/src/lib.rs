@@ -8,6 +8,7 @@ mod error;
 mod streaming;
 mod snapshot;
 mod security;
+mod tenancy;
 
 use event_store::PyEventStore;
 use event::PyEvent;
@@ -15,6 +16,7 @@ use aggregate::PyAggregate;
 use streaming::{PyEventStreamer, PyEventStreamReceiver, PySubscriptionBuilder, PyProjection};
 use snapshot::{PySnapshotService, PySnapshotConfig, PyAggregateSnapshot};
 use security::{PyEventEncryption, PyKeyManager, PyEncryptionKey, PyEncryptedEventData, PyEncryptionAlgorithm, PySecurityUtils};
+use tenancy::{PyTenantId, PyTenantInfo, PyTenantConfig, PyTenantMetadata, PyResourceLimits, PyTenantManager};
 
 #[pymodule]
 fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
@@ -40,6 +42,14 @@ fn _eventuali(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<PyEncryptedEventData>()?;
     m.add_class::<PyEncryptionAlgorithm>()?;
     m.add_class::<PySecurityUtils>()?;
+    
+    // Register tenancy classes
+    m.add_class::<PyTenantId>()?;
+    m.add_class::<PyTenantInfo>()?;
+    m.add_class::<PyTenantConfig>()?;
+    m.add_class::<PyTenantMetadata>()?;
+    m.add_class::<PyResourceLimits>()?;
+    m.add_class::<PyTenantManager>()?;
     
     // Register custom exceptions
     error::register_exceptions(py, m)?;

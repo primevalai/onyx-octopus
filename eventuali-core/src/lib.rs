@@ -6,6 +6,7 @@ pub mod proto;
 pub mod streaming;
 pub mod snapshot;
 pub mod security;
+pub mod tenancy;
 
 pub use event::{Event, EventData, EventId, EventMetadata};
 pub use aggregate::{Aggregate, AggregateId, AggregateVersion};
@@ -23,6 +24,11 @@ pub use snapshot::{
 };
 pub use security::{
     EventEncryption, KeyManager, EncryptionKey, EncryptedEventData, EncryptionAlgorithm
+};
+pub use tenancy::{
+    TenantId, TenantInfo, TenantConfig, TenantMetadata, TenantIsolation, 
+    IsolatedEventStore, TenantScope, TenantQuota, ResourceTracker, 
+    TenantManager, TenantOperations
 };
 
 // Re-export specific backend implementations
