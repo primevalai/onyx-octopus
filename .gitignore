@@ -33,6 +33,8 @@ MANIFEST
 *.so
 *.dylib
 *.dll
+*.pyd
+_eventuali.*
 
 # Virtual environments
 .env
