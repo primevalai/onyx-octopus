@@ -52,11 +52,26 @@ jobs:
       run: pip install uv
 
     - name: Install maturin
-      run: uv tool install maturin
+      run: |
+        uv tool install maturin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+      shell: bash
 
-    - name: Build wheels
+    - name: Build wheels (Unix)
+      if: matrix.os != 'windows-latest'
       working-directory: ./eventuali-python
       run: |
+        uv run maturin build --release --out dist
+      env:
+        OPENSSL_STATIC: 1
+        OPENSSL_VENDORED: 1
+        OPENSSL_NO_VENDOR: 0
+        
+    - name: Build wheels (Windows)
+      if: matrix.os == 'windows-latest'
+      working-directory: ./eventuali-python
+      run: |
+        uv add maturin
         uv run maturin build --release --out dist
       env:
         OPENSSL_STATIC: 1
@@ -141,7 +156,8 @@ jobs:
     - name: Install UV and maturin
       run: |
         pip install uv
-        uv tool install maturin
+        uv add maturin
+      working-directory: ./eventuali-python
 
     - name: Build source distribution
       working-directory: ./eventuali-python
