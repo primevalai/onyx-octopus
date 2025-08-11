@@ -18,10 +18,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Protocol Buffers
+    - name: Install Protocol Buffers and OpenSSL
       run: |
         sudo apt-get update
-        sudo apt-get install -y protobuf-compiler
+        sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
 
     - name: Build wheels
       uses: PyO3/maturin-action@v1

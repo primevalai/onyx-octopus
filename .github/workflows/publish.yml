@@ -33,20 +33,20 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Install Protocol Buffers (Ubuntu)
+    - name: Install Protocol Buffers and OpenSSL (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: |
         sudo apt-get update
-        sudo apt-get install -y protobuf-compiler
+        sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
 
-    - name: Install Protocol Buffers (macOS)
+    - name: Install Protocol Buffers and OpenSSL (macOS)
       if: matrix.os == 'macos-latest'
-      run: brew install protobuf
+      run: brew install protobuf openssl pkg-config
 
-    - name: Install Protocol Buffers (Windows)
+    - name: Install Protocol Buffers and OpenSSL (Windows)
       if: matrix.os == 'windows-latest'
       run: |
-        choco install protoc
+        choco install protoc openssl
         
     - name: Install UV
       run: pip install uv
@@ -129,10 +129,10 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
 
-    - name: Install Protocol Buffers
+    - name: Install Protocol Buffers and OpenSSL
       run: |
         sudo apt-get update
-        sudo apt-get install -y protobuf-compiler
+        sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
 
     - name: Install UV and maturin
       run: |
