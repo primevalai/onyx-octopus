@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "High-performance event sourcing library combining Rust performance with Python ease of use"
 authors = [{name = "PrimevalAI", email = "info@primeval.ai"}]
 license = {text = "MIT OR Apache-2.0"}
-readme = "../README.md"
+readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -64,7 +64,7 @@ Changelog = "https://github.com/primevalai/onyx-octopus/releases"
 python-source = "python"
 module-name = "eventuali._eventuali"
 features = ["pyo3/extension-module", "observability"]
-include = ["../README.md", "../LICENSE-MIT", "../LICENSE-APACHE"]
+include = ["README.md", "LICENSE-MIT", "LICENSE-APACHE"]
 exclude = ["*.db", "*.db-*", "tmp/", "venv/", "__pycache__/"]
 
 [tool.black]
