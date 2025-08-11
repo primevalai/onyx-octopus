@@ -84,12 +84,23 @@ jobs:
         OPENSSL_VENDORED: 1
         OPENSSL_NO_VENDOR: 0
         
-    - name: Test wheel installation
+    - name: Test wheel installation (Unix)
+      if: matrix.os != 'windows-latest'
       working-directory: ./eventuali-python
       run: |
         uv venv test-env
         uv pip install dist/*.whl --python test-env
         uv run --python test-env python -c "import eventuali; print('✓ Package imports successfully')"
+        
+    - name: Test wheel installation (Windows)
+      if: matrix.os == 'windows-latest'
+      working-directory: ./eventuali-python
+      run: |
+        uv venv test-env
+        uv pip install dist/*.whl --python test-env
+        uv run --python test-env python -c "import eventuali; print('Package imports successfully')"
+      env:
+        PYTHONIOENCODING: utf-8
 
     - name: Upload wheels as artifacts
       uses: actions/upload-artifact@v4
