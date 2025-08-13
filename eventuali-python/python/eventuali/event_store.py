@@ -3,7 +3,7 @@ High-level Python interface for the event store.
 """
 
 import asyncio
-from typing import Optional, List, Type, TypeVar, Union
+from typing import Optional, List, Type, TypeVar, Union, Dict
 from ._eventuali import PyEventStore
 from .event import Event
 from .aggregate import Aggregate
@@ -13,6 +13,9 @@ T = TypeVar('T', bound=Aggregate)
 
 class EventStore:
     """High-performance event store supporting PostgreSQL and SQLite."""
+    
+    # Class-level event registry to map event types to Python classes
+    _event_registry: Dict[str, Type[Event]] = {}
     
     def __init__(self):
         self._inner = PyEventStore()
@@ -43,10 +46,98 @@ class EventStore:
         store._initialized = True
         return store
     
+    @classmethod
+    def register_event_class(cls, event_type: str, event_class: Type[Event]) -> None:
+        """
+        Register a custom event class for deserialization.
+        
+        Args:
+            event_type: The event type string that identifies this event class
+            event_class: The Python class to use for deserializing events of this type
+            
+        Examples:
+            >>> EventStore.register_event_class("AgentEvent", AgentEvent)
+            >>> EventStore.register_event_class("agent.simonSays.commandReceived", AgentEvent)
+        """
+        if not issubclass(event_class, Event):
+            raise ValueError(f"event_class must be a subclass of Event, got {event_class}")
+        
+        cls._event_registry[event_type] = event_class
+    
+    @classmethod
+    def unregister_event_class(cls, event_type: str) -> None:
+        """
+        Unregister a custom event class.
+        
+        Args:
+            event_type: The event type string to unregister
+        """
+        cls._event_registry.pop(event_type, None)
+    
+    @classmethod
+    def get_registered_event_classes(cls) -> Dict[str, Type[Event]]:
+        """
+        Get a copy of all registered event classes.
+        
+        Returns:
+            Dictionary mapping event types to their registered classes
+        """
+        return cls._event_registry.copy()
+    
     def _ensure_initialized(self):
         """Ensure the event store has been initialized."""
         if not self._initialized:
             raise RuntimeError("EventStore not initialized. Use EventStore.create() instead of EventStore()")
+    
+    def _deserialize_event(self, event_dict: dict) -> Event:
+        """
+        Deserialize an event dictionary to the appropriate Python Event class.
+        
+        Args:
+            event_dict: Dictionary containing event data from the database
+            
+        Returns:
+            Event instance of the appropriate class
+        """
+        event_type = event_dict.get('event_type', '')
+        
+        # 1. First check the event registry for registered custom classes
+        if event_type in self._event_registry:
+            event_class = self._event_registry[event_type]
+            try:
+                return event_class.from_dict(event_dict)
+            except Exception:
+                # If deserialization fails, fall through to other methods
+                pass
+        
+        # 2. Try to find the class in the eventuali.event module (existing behavior)
+        try:
+            from . import event as event_module
+            event_class = getattr(event_module, event_type, None)
+            if event_class is not None and issubclass(event_class, Event):
+                return event_class.from_dict(event_dict)
+        except (ImportError, AttributeError, TypeError):
+            pass
+        
+        # 3. Fall back to base Event class but preserve all fields
+        # This ensures data is not lost even if the exact class isn't available
+        try:
+            return Event.from_dict(event_dict)
+        except Exception:
+            # Final fallback - create a minimal Event with just metadata
+            minimal_data = {
+                'event_id': event_dict.get('event_id'),
+                'aggregate_id': event_dict.get('aggregate_id'),
+                'aggregate_type': event_dict.get('aggregate_type'),
+                'event_type': event_dict.get('event_type'),
+                'event_version': event_dict.get('event_version', 1),
+                'aggregate_version': event_dict.get('aggregate_version'),
+                'timestamp': event_dict.get('timestamp'),
+                'causation_id': event_dict.get('causation_id'),
+                'correlation_id': event_dict.get('correlation_id'),
+                'user_id': event_dict.get('user_id'),
+            }
+            return Event.from_dict(minimal_data)
     
     async def save(self, aggregate: Aggregate) -> None:
         """
@@ -115,24 +206,9 @@ class EventStore:
             # Convert the Rust event back to Python Event
             event_dict = rust_event.to_dict()
             
-            # Dynamically import the event class based on event_type
-            event_type = event_dict['event_type']
-            try:
-                # Try to import from the event module
-                from . import event as event_module
-                event_class = getattr(event_module, event_type, None)
-                if event_class is None:
-                    # Fall back to generic Event
-                    event_class = Event
-                
-                # Create Python event from dict
-                python_event = event_class.from_dict(event_dict)
-                events.append(python_event)
-                
-            except (ImportError, AttributeError):
-                # Fall back to generic Event
-                python_event = Event.from_dict(event_dict)
-                events.append(python_event)
+            # Use the new deserialization helper
+            python_event = self._deserialize_event(event_dict)
+            events.append(python_event)
         
         # Reconstruct aggregate from events
         try:
@@ -165,16 +241,9 @@ class EventStore:
         for rust_event in rust_events:
             event_dict = rust_event.to_dict()
             
-            # Dynamically import the event class based on event_type
-            event_type = event_dict['event_type']
-            try:
-                from . import event as event_module
-                event_class = getattr(event_module, event_type, Event)
-                python_event = event_class.from_dict(event_dict)
-                events.append(python_event)
-            except (ImportError, AttributeError):
-                python_event = Event.from_dict(event_dict)
-                events.append(python_event)
+            # Use the new deserialization helper
+            python_event = self._deserialize_event(event_dict)
+            events.append(python_event)
         
         return events
     
@@ -203,16 +272,9 @@ class EventStore:
         for rust_event in rust_events:
             event_dict = rust_event.to_dict()
             
-            # Dynamically import the event class based on event_type
-            event_type = event_dict['event_type']
-            try:
-                from . import event as event_module
-                event_class = getattr(event_module, event_type, Event)
-                python_event = event_class.from_dict(event_dict)
-                events.append(python_event)
-            except (ImportError, AttributeError):
-                python_event = Event.from_dict(event_dict)
-                events.append(python_event)
+            # Use the new deserialization helper
+            python_event = self._deserialize_event(event_dict)
+            events.append(python_event)
         
         return events
     

@@ -37,6 +37,7 @@ class Event(BaseModel, ABC):
     model_config = {
         "frozen": False,  # Allow modification for event store metadata
         "use_enum_values": True,
+        "extra": "allow",  # Allow extra fields to be preserved during deserialization
         "json_encoders": {
             datetime: lambda v: v.isoformat(),
             UUID: lambda v: str(v),
