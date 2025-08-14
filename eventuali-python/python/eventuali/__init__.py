@@ -120,7 +120,7 @@ from .streaming import (
 from .snapshot import SnapshotService, SnapshotConfig, AggregateSnapshot
 from .exceptions import *
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 __author__ = "PrimevalAI"
 __email__ = "info@primeval.ai"
 
