@@ -1,0 +1,655 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Aggregate API Schema", 
+  "description": "Complete API specification for Eventuali Aggregate base class",
+  "type": "object",
+  "properties": {
+    "Aggregate": {
+      "type": "object",
+      "description": "Base class for domain aggregates in event sourcing",
+      "properties": {
+        "class_definition": {
+          "type": "object",
+          "properties": {
+            "inheritance": {
+              "type": "string",
+              "const": "class Aggregate(ABC)",
+              "description": "Abstract base class for all domain aggregates"
+            },
+            "abstract": {
+              "type": "boolean",
+              "const": true,
+              "description": "Cannot be instantiated directly - must be subclassed"
+            },
+            "pattern": {
+              "type": "string",
+              "const": "Domain-Driven Design Aggregate pattern with event sourcing"
+            }
+          }
+        },
+        "core_properties": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "str"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Unique identifier for this aggregate instance"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "immutable": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Set once during construction, never changes"
+                }
+              }
+            },
+            "version": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "int"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Current version of the aggregate (number of applied events)"
+                },
+                "initial_value": {
+                  "type": "integer",
+                  "const": 0
+                },
+                "auto_managed": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Automatically incremented when events are applied"
+                }
+              }
+            },
+            "_uncommitted_events": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "List[Event]"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Events applied but not yet persisted to event store"
+                },
+                "private": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "initial_value": {
+                  "type": "array",
+                  "const": []
+                }
+              }
+            }
+          }
+        },
+        "constructor": {
+          "type": "object",
+          "properties": {
+            "signature": {
+              "type": "string",
+              "const": "def __init__(self, id: str, version: int = 0)"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Unique aggregate identifier"
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "Starting version (default: 0 for new aggregates)"
+                }
+              },
+              "required": ["id"]
+            },
+            "initialization": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "const": [
+                "Sets aggregate ID (immutable)",
+                "Sets initial version", 
+                "Initializes empty uncommitted events list",
+                "Calls subclass-specific initialization"
+              ]
+            }
+          }
+        },
+        "core_methods": {
+          "type": "object",
+          "properties": {
+            "apply": {
+              "type": "object",
+              "description": "Apply an event to the aggregate and update state",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def apply(self, event: Event) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string",
+                      "const": "Event",
+                      "description": "Domain event to apply to this aggregate"
+                    }
+                  },
+                  "required": ["event"]
+                },
+                "behavior": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "Sets event.aggregate_id to self.id",
+                    "Sets event.aggregate_version to self.version + 1", 
+                    "Sets event.aggregate_type to class name",
+                    "Calls apply_{event_name_lower}(event) handler method",
+                    "Increments self.version",
+                    "Adds event to _uncommitted_events"
+                  ]
+                },
+                "handler_routing": {
+                  "type": "object",
+                  "properties": {
+                    "pattern": {
+                      "type": "string",
+                      "const": "apply_{event_class_name_lowercase}"
+                    },
+                    "examples": {
+                      "type": "object",
+                      "properties": {
+                        "UserRegistered": {
+                          "type": "string",
+                          "const": "apply_userregistered(event: UserRegistered)"
+                        },
+                        "EmailChanged": {
+                          "type": "string", 
+                          "const": "apply_emailchanged(event: EmailChanged)"
+                        },
+                        "OrderPlaced": {
+                          "type": "string",
+                          "const": "apply_orderplaced(event: OrderPlaced)"
+                        }
+                      }
+                    },
+                    "automatic": {
+                      "type": "boolean",
+                      "const": true,
+                      "description": "Handler methods called automatically via reflection"
+                    }
+                  }
+                },
+                "raises": [
+                  "AttributeError: If corresponding apply_{event_name} method doesn't exist",
+                  "ValueError: If event is invalid or aggregate is in inconsistent state"
+                ]
+              }
+            },
+            "get_uncommitted_events": {
+              "type": "object",
+              "description": "Get list of events applied but not yet persisted",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def get_uncommitted_events(self) -> List[Event]"
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "List[Event]",
+                  "description": "Copy of uncommitted events list"
+                },
+                "immutable_return": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Returns copy to prevent external modification"
+                }
+              }
+            },
+            "mark_events_as_committed": {
+              "type": "object",
+              "description": "Clear uncommitted events list after successful persistence",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def mark_events_as_committed(self) -> None"
+                },
+                "behavior": {
+                  "type": "string",
+                  "const": "Clears _uncommitted_events list"
+                },
+                "usage": {
+                  "type": "string",
+                  "const": "Called by EventStore after successful save operation"
+                }
+              }
+            },
+            "replay_events": {
+              "type": "object",
+              "description": "Replay historical events to rebuild aggregate state",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def replay_events(self, events: List[Event]) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "string",
+                      "const": "List[Event]",
+                      "description": "Historical events in chronological order"
+                    }
+                  },
+                  "required": ["events"]
+                },
+                "behavior": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "Calls apply_{event_name_lower} for each event",
+                    "Updates version to match last event",
+                    "Does NOT add events to uncommitted list",
+                    "Rebuilds aggregate state from event history"
+                  ]
+                },
+                "performance": {
+                  "type": "string",
+                  "const": "18.3x faster reconstruction than pure Python"
+                }
+              }
+            }
+          }
+        },
+        "subclass_patterns": {
+          "type": "object",
+          "properties": {
+            "event_handler_methods": {
+              "type": "object",
+              "properties": {
+                "naming_convention": {
+                  "type": "string",
+                  "const": "apply_{event_class_name_lowercase}"
+                },
+                "signature_pattern": {
+                  "type": "string",
+                  "const": "def apply_eventname(self, event: EventType) -> None"
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "event_class": {
+                        "type": "string"
+                      },
+                      "handler_method": {
+                        "type": "string"
+                      },
+                      "example_implementation": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "const": [
+                    {
+                      "event_class": "UserRegistered",
+                      "handler_method": "apply_userregistered",
+                      "example_implementation": "def apply_userregistered(self, event: UserRegistered):\n    self.name = event.name\n    self.email = event.email\n    self.is_active = True"
+                    },
+                    {
+                      "event_class": "EmailChanged", 
+                      "handler_method": "apply_emailchanged",
+                      "example_implementation": "def apply_emailchanged(self, event: EmailChanged):\n    self.email = event.new_email"
+                    },
+                    {
+                      "event_class": "UserDeactivated",
+                      "handler_method": "apply_userdeactivated", 
+                      "example_implementation": "def apply_userdeactivated(self, event: UserDeactivated):\n    self.is_active = False\n    self.deactivation_reason = event.reason"
+                    }
+                  ]
+                }
+              }
+            },
+            "business_methods": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "const": "Public methods that encapsulate business logic and apply events"
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "method_name": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "implementation": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "const": [
+                    {
+                      "method_name": "register",
+                      "description": "Register a new user",
+                      "implementation": "def register(self, name: str, email: str):\n    if self.version > 0:\n        raise ValueError('User already registered')\n    \n    event = UserRegistered(name=name, email=email)\n    self.apply(event)"
+                    },
+                    {
+                      "method_name": "change_email",
+                      "description": "Change user's email address",
+                      "implementation": "def change_email(self, new_email: str):\n    if not self.is_active:\n        raise ValueError('Cannot change email for inactive user')\n    \n    event = EmailChanged(old_email=self.email, new_email=new_email)\n    self.apply(event)"
+                    },
+                    {
+                      "method_name": "deactivate",
+                      "description": "Deactivate user account", 
+                      "implementation": "def deactivate(self, reason: str):\n    if not self.is_active:\n        raise ValueError('User already deactivated')\n    \n    event = UserDeactivated(reason=reason)\n    self.apply(event)"
+                    }
+                  ]
+                }
+              }
+            },
+            "state_properties": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "const": "Domain-specific properties that represent current aggregate state"
+                },
+                "initialization": {
+                  "type": "string",
+                  "const": "Set initial values in __init__, updated by event handlers"
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "property": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "const": [
+                    {
+                      "property": "name",
+                      "type": "str",
+                      "description": "User's full name"
+                    },
+                    {
+                      "property": "email", 
+                      "type": "str",
+                      "description": "User's email address"
+                    },
+                    {
+                      "property": "is_active",
+                      "type": "bool", 
+                      "description": "Whether user account is active"
+                    },
+                    {
+                      "property": "created_at",
+                      "type": "Optional[datetime]",
+                      "description": "When user was registered"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "lifecycle": {
+          "type": "object",
+          "properties": {
+            "creation": {
+              "type": "object",
+              "properties": {
+                "new_aggregate": {
+                  "type": "string",
+                  "const": "aggregate = MyAggregate(id='unique-id')"
+                },
+                "initial_state": {
+                  "type": "string",
+                  "const": "version=0, no uncommitted events, default property values"
+                }
+              }
+            },
+            "event_application": {
+              "type": "object",
+              "properties": {
+                "business_command": {
+                  "type": "string",
+                  "const": "aggregate.business_method(params)"
+                },
+                "event_creation": {
+                  "type": "string",
+                  "const": "Creates domain event with business data"
+                },
+                "apply_event": {
+                  "type": "string",
+                  "const": "self.apply(event) updates state and version"
+                },
+                "state_change": {
+                  "type": "string",
+                  "const": "Handler method applies changes to aggregate properties"
+                }
+              }
+            },
+            "persistence": {
+              "type": "object",
+              "properties": {
+                "save_to_store": {
+                  "type": "string",
+                  "const": "await event_store.save(aggregate)"
+                },
+                "event_persistence": {
+                  "type": "string",
+                  "const": "Uncommitted events written to database"
+                },
+                "mark_committed": {
+                  "type": "string",
+                  "const": "aggregate.mark_events_as_committed()"
+                },
+                "final_state": {
+                  "type": "string",
+                  "const": "Clean aggregate ready for new commands"
+                }
+              }
+            },
+            "reconstruction": {
+              "type": "object",
+              "properties": {
+                "load_from_store": {
+                  "type": "string",
+                  "const": "aggregate = await event_store.load(AggregateClass, id)"
+                },
+                "event_replay": {
+                  "type": "string",
+                  "const": "replay_events() rebuilds state from event history"
+                },
+                "performance": {
+                  "type": "string",
+                  "const": "18.3x faster than pure Python implementation"
+                },
+                "final_state": {
+                  "type": "string",
+                  "const": "Aggregate state matches last applied event"
+                }
+              }
+            }
+          }
+        },
+        "concurrency_control": {
+          "type": "object",
+          "properties": {
+            "optimistic_concurrency": {
+              "type": "object",
+              "properties": {
+                "version_checking": {
+                  "type": "string",
+                  "const": "EventStore checks expected version matches current version"
+                },
+                "conflict_detection": {
+                  "type": "string",
+                  "const": "OptimisticConcurrencyError raised if versions don't match"
+                },
+                "retry_pattern": {
+                  "type": "string",
+                  "const": "Load fresh aggregate and retry operation"
+                }
+              }
+            },
+            "version_management": {
+              "type": "object",
+              "properties": {
+                "auto_increment": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Version automatically incremented on each event"
+                },
+                "sequence_guarantee": {
+                  "type": "string",
+                  "const": "Events have sequential version numbers without gaps"
+                },
+                "conflict_resolution": {
+                  "type": "string",
+                  "const": "Manual conflict resolution required through business logic"
+                }
+              }
+            }
+          }
+        },
+        "validation_patterns": {
+          "type": "object",
+          "properties": {
+            "business_rule_validation": {
+              "type": "object",
+              "properties": {
+                "location": {
+                  "type": "string",
+                  "const": "In business methods before creating events"
+                },
+                "examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "if self.version > 0: raise ValueError('Already registered')",
+                    "if not self.is_active: raise ValueError('User not active')", 
+                    "if new_email == self.email: raise ValueError('Email unchanged')"
+                  ]
+                }
+              }
+            },
+            "invariant_enforcement": {
+              "type": "object",
+              "properties": {
+                "aggregate_consistency": {
+                  "type": "string",
+                  "const": "Ensure aggregate remains in valid state after each event"
+                },
+                "cross_property_validation": {
+                  "type": "string",
+                  "const": "Validate relationships between aggregate properties"
+                },
+                "domain_constraints": {
+                  "type": "string", 
+                  "const": "Enforce business rules and domain constraints"
+                }
+              }
+            }
+          }
+        },
+        "performance_characteristics": {
+          "type": "object",
+          "properties": {
+            "event_application": {
+              "type": "string",
+              "const": "79000+ events/sec application speed"
+            },
+            "state_reconstruction": {
+              "type": "string",
+              "const": "18.3x faster than pure Python"
+            },
+            "memory_efficiency": {
+              "type": "string",
+              "const": "8-20x lower memory usage vs pure Python"
+            },
+            "concurrency_handling": {
+              "type": "string",
+              "const": "Optimistic concurrency with automatic retry patterns"
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "complete_user_aggregate": {
+      "type": "object",
+      "properties": {
+        "class_definition": {
+          "type": "string",
+          "const": "class User(Aggregate):\n    def __init__(self, id: str, version: int = 0):\n        super().__init__(id, version)\n        self.name = None\n        self.email = None\n        self.is_active = False\n        self.created_at = None"
+        },
+        "business_methods": {
+          "type": "string",
+          "const": "    def register(self, name: str, email: str):\n        if self.version > 0:\n            raise ValueError('User already registered')\n        \n        event = UserRegistered(name=name, email=email)\n        self.apply(event)\n    \n    def change_email(self, new_email: str):\n        if not self.is_active:\n            raise ValueError('Cannot change email for inactive user')\n        if new_email == self.email:\n            raise ValueError('New email same as current email')\n        \n        event = EmailChanged(old_email=self.email, new_email=new_email)\n        self.apply(event)"
+        },
+        "event_handlers": {
+          "type": "string",
+          "const": "    def apply_userregistered(self, event: UserRegistered):\n        self.name = event.name\n        self.email = event.email\n        self.is_active = True\n        self.created_at = event.timestamp\n    \n    def apply_emailchanged(self, event: EmailChanged):\n        self.email = event.new_email\n    \n    def apply_userdeactivated(self, event: UserDeactivated):\n        self.is_active = False"
+        }
+      }
+    },
+    "usage_pattern": {
+      "type": "object",
+      "properties": {
+        "create_new": {
+          "type": "string",
+          "const": "# Create new aggregate\nuser = User(id='user-123')\nuser.register('John Doe', 'john@example.com')\n\n# Save to store\nawait event_store.save(user)\nuser.mark_events_as_committed()"
+        },
+        "load_existing": {
+          "type": "string",
+          "const": "# Load existing aggregate\nuser = await event_store.load(User, 'user-123')\n\n# Modify state\nuser.change_email('john.doe@company.com')\n\n# Save changes\nawait event_store.save(user)\nuser.mark_events_as_committed()"
+        },
+        "error_handling": {
+          "type": "string",
+          "const": "try:\n    user = await event_store.load(User, 'user-123')\n    user.change_email('new@example.com')\n    await event_store.save(user)\n    user.mark_events_as_committed()\nexcept OptimisticConcurrencyError:\n    # Reload and retry\n    user = await event_store.load(User, 'user-123')\n    user.change_email('new@example.com')\n    await event_store.save(user)\n    user.mark_events_as_committed()"
+        }
+      }
+    }
+  }
+}

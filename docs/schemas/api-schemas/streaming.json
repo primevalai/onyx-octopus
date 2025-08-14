@@ -1,0 +1,630 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Streaming API Schema",
+  "description": "Complete API specification for Eventuali streaming components",
+  "type": "object",
+  "properties": {
+    "EventStreamer": {
+      "type": "object",
+      "description": "High-performance event publisher/subscriber system",
+      "properties": {
+        "constructor": {
+          "type": "object",
+          "properties": {
+            "signature": {
+              "type": "string",
+              "const": "def __init__(self, capacity: int = 1000)"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "capacity": {
+                  "type": "integer",
+                  "description": "Maximum number of events to buffer in memory",
+                  "default": 1000,
+                  "recommended_ranges": {
+                    "low_throughput": "100-500",
+                    "medium_throughput": "1000-5000", 
+                    "high_throughput": "10000-50000"
+                  }
+                }
+              }
+            },
+            "performance_impact": {
+              "type": "object",
+              "properties": {
+                "higher_capacity": {
+                  "pros": ["Better burst handling", "Reduced backpressure"],
+                  "cons": ["Higher memory usage"]
+                },
+                "lower_capacity": {
+                  "pros": ["Lower memory usage"],
+                  "cons": ["Potential event loss under high load"]
+                }
+              }
+            }
+          }
+        },
+        "core_methods": {
+          "type": "object",
+          "properties": {
+            "subscribe": {
+              "type": "object",
+              "description": "Subscribe to filtered event stream",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def subscribe(self, subscription: Subscription) -> EventStreamReceiver"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "subscription": {
+                      "type": "string",
+                      "const": "Subscription",
+                      "description": "Configuration defining event filtering criteria"
+                    }
+                  },
+                  "required": ["subscription"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "EventStreamReceiver",
+                  "description": "Receiver for consuming filtered events"
+                },
+                "filtering_options": {
+                  "type": "object",
+                  "properties": {
+                    "aggregate_type_filter": {
+                      "type": "string",
+                      "description": "Only events from specific aggregate type",
+                      "examples": ["User", "Order", "Product"]
+                    },
+                    "event_type_filter": {
+                      "type": "string", 
+                      "description": "Only events of specific type",
+                      "examples": ["UserRegistered", "OrderPlaced", "EmailChanged"]
+                    },
+                    "no_filter": {
+                      "type": "string",
+                      "description": "Receive all events (use with caution)"
+                    }
+                  }
+                },
+                "performance": {
+                  "type": "string",
+                  "const": "78000+ events/sec processing capability"
+                }
+              }
+            },
+            "unsubscribe": {
+              "type": "object",
+              "description": "Remove an active subscription",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def unsubscribe(self, subscription_id: str) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "subscription_id": {
+                      "type": "string",
+                      "description": "ID of the subscription to remove"
+                    }
+                  },
+                  "required": ["subscription_id"]
+                },
+                "behavior": {
+                  "type": "string",
+                  "const": "Stops event delivery and cleans up resources"
+                }
+              }
+            },
+            "get_global_position": {
+              "type": "object",
+              "description": "Get current global event position",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def get_global_position(self) -> int"
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "int",
+                  "description": "Current global position across all event streams"
+                },
+                "use_cases": [
+                  "Checkpoint/resume functionality",
+                  "Position tracking for projections",
+                  "Monitoring stream progress"
+                ]
+              }
+            },
+            "publish_event": {
+              "type": "object",
+              "description": "Publish event to all subscribers",
+              "properties": {
+                "signature": {
+                  "type": "string", 
+                  "const": "async def publish_event(self, event: Event, stream_position: int, global_position: int) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "string",
+                      "const": "Event",
+                      "description": "Domain event to publish"
+                    },
+                    "stream_position": {
+                      "type": "integer",
+                      "description": "Position in the specific aggregate stream"
+                    },
+                    "global_position": {
+                      "type": "integer", 
+                      "description": "Global position across all streams"
+                    }
+                  },
+                  "required": ["event", "stream_position", "global_position"]
+                },
+                "automatic_integration": {
+                  "type": "string",
+                  "const": "Usually called automatically by EventStore.save()"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "EventStreamReceiver": {
+      "type": "object",
+      "description": "Consumer for receiving events from subscriptions",
+      "properties": {
+        "core_methods": {
+          "type": "object",
+          "properties": {
+            "recv": {
+              "type": "object",
+              "description": "Receive next event from stream",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def recv(self) -> StreamEvent"
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "StreamEvent",
+                  "description": "Event with position information"
+                },
+                "blocking_behavior": {
+                  "type": "string",
+                  "const": "Blocks until event available or channel closed"
+                },
+                "raises": [
+                  "RuntimeError: If channel is closed or no more events"
+                ]
+              }
+            },
+            "async_iteration": {
+              "type": "object",
+              "description": "Iterate over events using async for",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def __aiter__(self) -> AsyncIterator[StreamEvent]"
+                },
+                "usage_pattern": {
+                  "type": "string",
+                  "const": "async for stream_event in receiver:"
+                },
+                "termination": {
+                  "type": "string",
+                  "const": "Loop ends when channel is closed"
+                },
+                "performance": {
+                  "type": "string",
+                  "const": "78000+ events/sec consumption rate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "StreamEvent": {
+      "type": "object",
+      "description": "Wrapper containing event and position information",
+      "properties": {
+        "properties": {
+          "type": "object",
+          "properties": {
+            "event": {
+              "type": "string",
+              "const": "Event",
+              "description": "The actual domain event"
+            },
+            "stream_position": {
+              "type": "integer",
+              "description": "Position in the aggregate's event stream"
+            },
+            "global_position": {
+              "type": "integer",
+              "description": "Global position across all event streams"
+            }
+          }
+        },
+        "usage": {
+          "type": "object",
+          "properties": {
+            "event_access": {
+              "type": "string",
+              "const": "stream_event.event  # Access the domain event"
+            },
+            "position_tracking": {
+              "type": "string",
+              "const": "stream_event.global_position  # For checkpoints"
+            },
+            "stream_specific": {
+              "type": "string",
+              "const": "stream_event.stream_position  # Aggregate-specific position"
+            }
+          }
+        }
+      }
+    },
+    "Subscription": {
+      "type": "object",
+      "description": "Configuration for event filtering and routing",
+      "properties": {
+        "constructor": {
+          "type": "object",
+          "properties": {
+            "signature": {
+              "type": "string",
+              "const": "def __init__(self, id: Optional[str] = None, aggregate_type_filter: Optional[str] = None, event_type_filter: Optional[str] = None, from_timestamp: Optional[datetime] = None)"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "description": "Optional subscription ID (auto-generated if not provided)",
+                  "required": false
+                },
+                "aggregate_type_filter": {
+                  "type": "string",
+                  "description": "Filter by aggregate type (e.g., 'User', 'Order')",
+                  "required": false
+                },
+                "event_type_filter": {
+                  "type": "string",
+                  "description": "Filter by event type (e.g., 'UserRegistered')",
+                  "required": false
+                },
+                "from_timestamp": {
+                  "type": "string",
+                  "const": "Optional[datetime]",
+                  "description": "Only receive events from this timestamp onwards",
+                  "required": false
+                }
+              }
+            }
+          }
+        },
+        "filtering_examples": {
+          "type": "object",
+          "properties": {
+            "all_events": {
+              "type": "string",
+              "const": "Subscription()  # No filters - all events"
+            },
+            "by_aggregate": {
+              "type": "string",
+              "const": "Subscription(aggregate_type_filter='User')  # All User events"
+            },
+            "by_event_type": {
+              "type": "string",
+              "const": "Subscription(event_type_filter='OrderPlaced')  # Only OrderPlaced events"
+            },
+            "combined_filters": {
+              "type": "string",
+              "const": "Subscription(aggregate_type_filter='User', event_type_filter='EmailChanged')"
+            }
+          }
+        }
+      }
+    },
+    "SubscriptionBuilder": {
+      "type": "object",
+      "description": "Fluent interface for building complex subscriptions",
+      "properties": {
+        "methods": {
+          "type": "object",
+          "properties": {
+            "with_id": {
+              "type": "string",
+              "const": "def with_id(self, id: str) -> SubscriptionBuilder"
+            },
+            "filter_by_aggregate_type": {
+              "type": "string",
+              "const": "def filter_by_aggregate_type(self, aggregate_type: str) -> SubscriptionBuilder"
+            },
+            "filter_by_event_type": {
+              "type": "string",
+              "const": "def filter_by_event_type(self, event_type: str) -> SubscriptionBuilder"
+            },
+            "from_timestamp": {
+              "type": "string",
+              "const": "def from_timestamp(self, timestamp: datetime) -> SubscriptionBuilder"
+            },
+            "build": {
+              "type": "string",
+              "const": "def build(self) -> Subscription"
+            }
+          }
+        },
+        "usage_example": {
+          "type": "string",
+          "const": "subscription = (SubscriptionBuilder()\n    .with_id('order-processor')\n    .filter_by_aggregate_type('Order')\n    .filter_by_event_type('OrderPlaced')\n    .build())"
+        }
+      }
+    },
+    "Projection": {
+      "type": "object",
+      "description": "Base class for building read models from event streams",
+      "properties": {
+        "abstract_methods": {
+          "type": "object",
+          "properties": {
+            "handle_event": {
+              "type": "object",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def handle_event(self, event: Event) -> None"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Process an event and update the projection state"
+                },
+                "implementation_required": {
+                  "type": "boolean",
+                  "const": true
+                }
+              }
+            },
+            "reset": {
+              "type": "object",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def reset(self) -> None"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Reset projection to initial state"
+                },
+                "implementation_required": {
+                  "type": "boolean",
+                  "const": true
+                }
+              }
+            },
+            "get_last_processed_position": {
+              "type": "object",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def get_last_processed_position(self) -> Optional[int]"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Get last processed event position for checkpointing"
+                }
+              }
+            },
+            "set_last_processed_position": {
+              "type": "object",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def set_last_processed_position(self, position: int) -> None"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Set last processed position for resume capability"
+                }
+              }
+            }
+          }
+        },
+        "usage_patterns": {
+          "type": "object",
+          "properties": {
+            "read_model_building": {
+              "type": "string",
+              "const": "Build optimized query models from event streams"
+            },
+            "analytics": {
+              "type": "string",
+              "const": "Real-time analytics and metrics calculation"
+            },
+            "dashboard_updates": {
+              "type": "string",
+              "const": "Real-time dashboard data updates"
+            },
+            "search_indexing": {
+              "type": "string",
+              "const": "Maintain search indexes from domain events"
+            }
+          }
+        }
+      }
+    },
+    "SagaHandler": {
+      "type": "object",
+      "description": "Base class for coordinating distributed transactions",
+      "properties": {
+        "abstract_methods": {
+          "type": "object",
+          "properties": {
+            "handle_event": {
+              "type": "object",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def handle_event(self, event: Event) -> None"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "React to events and coordinate workflow steps"
+                },
+                "responsibilities": [
+                  "Determine next workflow step",
+                  "Issue commands to other aggregates",
+                  "Handle compensation logic",
+                  "Track saga state"
+                ]
+              }
+            }
+          }
+        },
+        "saga_patterns": {
+          "type": "object",
+          "properties": {
+            "choreography": {
+              "type": "string",
+              "const": "Sagas react to events and coordinate via event publishing"
+            },
+            "orchestration": {
+              "type": "string", 
+              "const": "Central saga orchestrates workflow by issuing commands"
+            },
+            "compensation": {
+              "type": "string",
+              "const": "Handle failures with compensating transactions"
+            }
+          }
+        },
+        "performance": {
+          "type": "string",
+          "const": "~214ms average saga execution time (measured)"
+        }
+      }
+    }
+  },
+  "integration_patterns": {
+    "event_store_integration": {
+      "type": "object",
+      "properties": {
+        "automatic_publishing": {
+          "type": "string",
+          "const": "store = await EventStore.create(connection_string, streamer=streamer)"
+        },
+        "manual_integration": {
+          "type": "string",
+          "const": "await streamer.publish_event(event, stream_pos, global_pos)"
+        },
+        "performance": {
+          "type": "string",
+          "const": "Events published at 78k+ events/sec automatically"
+        }
+      }
+    },
+    "projection_processing": {
+      "type": "object",
+      "properties": {
+        "setup": {
+          "type": "string",
+          "const": "subscription = Subscription(aggregate_type_filter='User')\nreceiver = await streamer.subscribe(subscription)"
+        },
+        "processing_loop": {
+          "type": "string",
+          "const": "async for stream_event in receiver:\n    await projection.handle_event(stream_event.event)\n    await projection.set_last_processed_position(stream_event.global_position)"
+        },
+        "error_handling": {
+          "type": "string",
+          "const": "try/except around handle_event with dead letter queue for failed events"
+        }
+      }
+    },
+    "real_time_apis": {
+      "type": "object",
+      "properties": {
+        "websocket_broadcasting": {
+          "type": "string",
+          "const": "async for stream_event in receiver:\n    await websocket_manager.broadcast(stream_event.event.to_dict())"
+        },
+        "fastapi_integration": {
+          "type": "string",
+          "const": "Background task subscribes to events and broadcasts to WebSocket clients"
+        },
+        "performance": {
+          "type": "string",
+          "const": "1.1 updates/sec real-time dashboard updates (measured)"
+        }
+      }
+    }
+  },
+  "performance_characteristics": {
+    "throughput": {
+      "event_processing": "78000+ events/sec",
+      "streaming_delivery": "78000+ events/sec", 
+      "projection_updates": "78000+ events/sec",
+      "saga_coordination": "~214ms average execution time"
+    },
+    "latency": {
+      "event_delivery": "<1ms",
+      "projection_updates": "<1ms",
+      "websocket_broadcast": "<100ms"
+    },
+    "scalability": {
+      "concurrent_subscribers": "Hundreds of concurrent subscriptions",
+      "memory_efficiency": "Rust-based broadcast channels",
+      "backpressure_handling": "Configurable buffer capacity"
+    }
+  },
+  "examples": {
+    "basic_streaming": {
+      "type": "object",
+      "properties": {
+        "setup": {
+          "type": "string",
+          "const": "streamer = EventStreamer(capacity=5000)\nsubscription = Subscription(aggregate_type_filter='User')\nreceiver = await streamer.subscribe(subscription)"
+        },
+        "consumption": {
+          "type": "string",
+          "const": "async for stream_event in receiver:\n    event = stream_event.event\n    print(f'Received {event.event_type} at position {stream_event.global_position}')\n    await process_event(event)"
+        }
+      }
+    },
+    "projection_example": {
+      "type": "object",
+      "properties": {
+        "class_definition": {
+          "type": "string",
+          "const": "class UserCountProjection(Projection):\n    def __init__(self):\n        self.total_users = 0\n        self.active_users = 0\n        self.last_position = 0\n    \n    async def handle_event(self, event: Event):\n        if event.event_type == 'UserRegistered':\n            self.total_users += 1\n            self.active_users += 1\n        elif event.event_type == 'UserDeactivated':\n            self.active_users -= 1"
+        },
+        "processing": {
+          "type": "string",
+          "const": "projection = UserCountProjection()\nsubscription = Subscription(aggregate_type_filter='User')\nreceiver = await streamer.subscribe(subscription)\n\nasync for stream_event in receiver:\n    await projection.handle_event(stream_event.event)\n    projection.last_position = stream_event.global_position"
+        }
+      }
+    },
+    "saga_example": {
+      "type": "object",
+      "properties": {
+        "class_definition": {
+          "type": "string",
+          "const": "class OrderProcessingSaga(SagaHandler):\n    async def handle_event(self, event: Event):\n        if event.event_type == 'OrderPlaced':\n            await self.reserve_inventory(event.aggregate_id)\n            await self.process_payment(event.aggregate_id)\n        elif event.event_type == 'PaymentFailed':\n            await self.release_inventory(event.aggregate_id)\n            await self.cancel_order(event.aggregate_id)"
+        },
+        "coordination": {
+          "type": "string",
+          "const": "# Saga coordinates multiple aggregates through events\n# Average execution time: ~214ms per workflow step"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,461 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EventStore API Schema",
+  "description": "Complete API specification for Eventuali EventStore class",
+  "type": "object",
+  "properties": {
+    "EventStore": {
+      "type": "object",
+      "description": "High-performance event store supporting PostgreSQL and SQLite",
+      "properties": {
+        "class_methods": {
+          "type": "object",
+          "properties": {
+            "create": {
+              "type": "object",
+              "description": "Create and initialize an event store",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def create(cls, connection_string: str) -> EventStore"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "connection_string": {
+                      "type": "string",
+                      "description": "Database connection string",
+                      "examples": [
+                        "sqlite://:memory:",
+                        "sqlite://events.db",
+                        "postgresql://user:pass@localhost/events"
+                      ]
+                    }
+                  },
+                  "required": ["connection_string"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "EventStore",
+                  "description": "Initialized EventStore instance"
+                },
+                "raises": [
+                  "RuntimeError: If initialization fails",
+                  "DatabaseError: If connection string is invalid"
+                ],
+                "performance": {
+                  "initialization_time": "<100ms",
+                  "connection_pooling": "automatic"
+                }
+              }
+            },
+            "register_event_class": {
+              "type": "object",
+              "description": "Register a custom event class for deserialization",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def register_event_class(cls, event_type: str, event_class: Type[Event]) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "event_type": {
+                      "type": "string",
+                      "description": "The event type identifier",
+                      "examples": ["OrderCreated", "order.created", "UserRegistered"]
+                    },
+                    "event_class": {
+                      "type": "string",
+                      "const": "Type[Event]",
+                      "description": "Python class for this event type"
+                    }
+                  },
+                  "required": ["event_type", "event_class"]
+                },
+                "raises": [
+                  "ValueError: If event_class is not a subclass of Event"
+                ]
+              }
+            }
+          }
+        },
+        "instance_methods": {
+          "type": "object",
+          "properties": {
+            "save": {
+              "type": "object",
+              "description": "Save an aggregate and its uncommitted events",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def save(self, aggregate: Aggregate) -> None"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "aggregate": {
+                      "type": "string",
+                      "const": "Aggregate",
+                      "description": "The aggregate to save"
+                    }
+                  },
+                  "required": ["aggregate"]
+                },
+                "raises": [
+                  "OptimisticConcurrencyError: If aggregate was modified by another process",
+                  "EventStoreError: If save operation fails"
+                ],
+                "performance": {
+                  "throughput": "25000+ saves/sec",
+                  "consistency": "optimistic concurrency control",
+                  "atomicity": "per aggregate"
+                }
+              }
+            },
+            "load": {
+              "type": "object",
+              "description": "Load an aggregate from the event store by ID",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def load(self, aggregate_class: Type[T], aggregate_id: str) -> Optional[T]"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "aggregate_class": {
+                      "type": "string",
+                      "const": "Type[T]",
+                      "description": "The aggregate class to instantiate"
+                    },
+                    "aggregate_id": {
+                      "type": "string",
+                      "description": "Unique identifier of the aggregate"
+                    }
+                  },
+                  "required": ["aggregate_class", "aggregate_id"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "Optional[T]",
+                  "description": "The loaded aggregate, or None if not found"
+                },
+                "performance": {
+                  "throughput": "40000+ loads/sec",
+                  "reconstruction": "18.3x faster than pure Python",
+                  "optimization": "automatic event deserialization"
+                }
+              }
+            },
+            "load_events": {
+              "type": "object",
+              "description": "Load events for a specific aggregate",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def load_events(self, aggregate_id: str, from_version: Optional[int] = None) -> List[Event]"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "aggregate_id": {
+                      "type": "string",
+                      "description": "The aggregate identifier"
+                    },
+                    "from_version": {
+                      "type": ["integer", "null"],
+                      "description": "Optional version to start loading from"
+                    }
+                  },
+                  "required": ["aggregate_id"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "List[Event]",
+                  "description": "List of events ordered by version"
+                }
+              }
+            },
+            "get_aggregate_version": {
+              "type": "object",
+              "description": "Get the current version of an aggregate",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "async def get_aggregate_version(self, aggregate_id: str) -> Optional[int]"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "aggregate_id": {
+                      "type": "string",
+                      "description": "The aggregate identifier"
+                    }
+                  },
+                  "required": ["aggregate_id"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "Optional[int]",
+                  "description": "Current version, or None if aggregate doesn't exist"
+                }
+              }
+            }
+          }
+        },
+        "error_handling": {
+          "type": "object",
+          "properties": {
+            "exception_hierarchy": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "exception": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "when_raised": {
+                    "type": "string"
+                  }
+                }
+              },
+              "const": [
+                {
+                  "exception": "EventualiError",
+                  "description": "Base exception for all Eventuali errors",
+                  "when_raised": "Base class - not raised directly"
+                },
+                {
+                  "exception": "EventStoreError",
+                  "description": "General store errors",
+                  "when_raised": "Database connection issues, store initialization failures"
+                },
+                {
+                  "exception": "OptimisticConcurrencyError",
+                  "description": "Concurrent modification detected",
+                  "when_raised": "Aggregate was modified by another process during save"
+                },
+                {
+                  "exception": "AggregateNotFoundError",
+                  "description": "Aggregate not found",
+                  "when_raised": "Loading non-existent aggregate"
+                },
+                {
+                  "exception": "SerializationError",
+                  "description": "Event serialization failures",
+                  "when_raised": "Invalid event data or schema issues"
+                }
+              ]
+            },
+            "retry_patterns": {
+              "type": "object",
+              "properties": {
+                "optimistic_concurrency": {
+                  "type": "object",
+                  "properties": {
+                    "max_retries": {
+                      "type": "integer",
+                      "const": 3,
+                      "description": "Recommended maximum retry attempts"
+                    },
+                    "strategy": {
+                      "type": "string",
+                      "const": "reload_and_retry",
+                      "description": "Reload fresh aggregate and retry operation"
+                    }
+                  }
+                },
+                "connection_errors": {
+                  "type": "object",
+                  "properties": {
+                    "backoff": {
+                      "type": "string",
+                      "const": "exponential",
+                      "description": "Use exponential backoff: 2^attempt seconds"
+                    },
+                    "max_retries": {
+                      "type": "integer",
+                      "const": 3
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "performance_characteristics": {
+          "type": "object",
+          "properties": {
+            "throughput": {
+              "type": "object",
+              "properties": {
+                "event_creation": {
+                  "type": "string",
+                  "const": "79000+ events/sec"
+                },
+                "event_persistence": {
+                  "type": "string", 
+                  "const": "25000+ events/sec"
+                },
+                "event_loading": {
+                  "type": "string",
+                  "const": "40000+ events/sec"
+                },
+                "aggregate_reconstruction": {
+                  "type": "string",
+                  "const": "18.3x faster than pure Python"
+                }
+              }
+            },
+            "memory_efficiency": {
+              "type": "object",
+              "properties": {
+                "usage_reduction": {
+                  "type": "string",
+                  "const": "8-20x lower than pure Python"
+                },
+                "lazy_loading": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "connection_pooling": {
+                  "type": "string",
+                  "const": "automatic scaling"
+                }
+              }
+            },
+            "database_support": {
+              "type": "object",
+              "properties": {
+                "sqlite": {
+                  "type": "object",
+                  "properties": {
+                    "development": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "production_single_node": {
+                      "type": "boolean", 
+                      "const": true
+                    },
+                    "horizontal_scaling": {
+                      "type": "boolean",
+                      "const": false
+                    }
+                  }
+                },
+                "postgresql": {
+                  "type": "object",
+                  "properties": {
+                    "production": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "horizontal_scaling": {
+                      "type": "boolean",
+                      "const": true
+                    },
+                    "read_replicas": {
+                      "type": "boolean",
+                      "const": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "integration_patterns": {
+          "type": "object",
+          "properties": {
+            "dependency_injection": {
+              "type": "object",
+              "properties": {
+                "fastapi": {
+                  "type": "string",
+                  "const": "async def get_event_store() -> EventStore"
+                },
+                "django": {
+                  "type": "string",
+                  "const": "EVENTUALI_STORE setting configuration"
+                },
+                "singleton": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Recommended to use single instance per application"
+                }
+              }
+            },
+            "threading": {
+              "type": "object",
+              "properties": {
+                "async_safe": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "thread_safe": {
+                  "type": "boolean",
+                  "const": false,
+                  "description": "Use one instance per async context"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "basic_usage": {
+      "type": "object",
+      "properties": {
+        "setup": {
+          "type": "string",
+          "const": "store = await EventStore.create('postgresql://user:pass@host/db')"
+        },
+        "save_aggregate": {
+          "type": "string",
+          "const": "await store.save(user); user.mark_events_as_committed()"
+        },
+        "load_aggregate": {
+          "type": "string",
+          "const": "user = await store.load(User, 'user-123')"
+        },
+        "load_events": {
+          "type": "string",
+          "const": "events = await store.load_events('user-123')"
+        }
+      }
+    },
+    "error_handling": {
+      "type": "object",
+      "properties": {
+        "concurrency_retry": {
+          "type": "string",
+          "const": "try: await store.save(user); except OptimisticConcurrencyError: user = await store.load(User, user.id); # retry"
+        },
+        "not_found": {
+          "type": "string",
+          "const": "user = await store.load(User, 'id'); if not user: raise HTTPException(404)"
+        }
+      }
+    },
+    "performance_optimization": {
+      "type": "object",
+      "properties": {
+        "connection_string": {
+          "type": "string",
+          "const": "postgresql://user:pass@host/db?pool_size=20&max_overflow=30"
+        },
+        "batch_operations": {
+          "type": "string",
+          "const": "Use transaction boundaries for related aggregate saves"
+        }
+      }
+    }
+  }
+}

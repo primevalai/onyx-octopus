@@ -1,0 +1,492 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Event API Schema",
+  "description": "Complete API specification for Eventuali Event class",
+  "type": "object",
+  "properties": {
+    "Event": {
+      "type": "object",
+      "description": "Base class for all domain events in the event sourcing system",
+      "properties": {
+        "class_definition": {
+          "type": "object",
+          "properties": {
+            "inheritance": {
+              "type": "string",
+              "const": "class Event(BaseModel)",
+              "description": "Inherits from Pydantic BaseModel for validation and serialization"
+            },
+            "signature": {
+              "type": "string",
+              "const": "class Event(BaseModel, ABC)"
+            },
+            "abstract": {
+              "type": "boolean",
+              "const": true,
+              "description": "Abstract base class - cannot be instantiated directly"
+            }
+          }
+        },
+        "core_properties": {
+          "type": "object",
+          "properties": {
+            "aggregate_id": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "str"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Unique identifier of the aggregate that generated this event"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "examples": [
+                  "user-123",
+                  "order-456", 
+                  "product-789"
+                ]
+              }
+            },
+            "aggregate_type": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "str"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Type of aggregate that generated this event"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "examples": [
+                  "User",
+                  "Order",
+                  "Product"
+                ]
+              }
+            },
+            "aggregate_version": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "int"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Version of the aggregate when this event was generated"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "minimum": {
+                  "type": "integer",
+                  "const": 1
+                }
+              }
+            },
+            "event_type": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "str"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Type identifier for this event"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": true
+                },
+                "auto_generated": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Automatically derived from class name"
+                },
+                "examples": [
+                  "UserRegistered",
+                  "EmailChanged",
+                  "OrderPlaced"
+                ]
+              }
+            },
+            "timestamp": {
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "const": "Optional[datetime]"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "When this event was created (auto-generated if not provided)"
+                },
+                "required": {
+                  "type": "boolean",
+                  "const": false
+                },
+                "auto_generated": {
+                  "type": "boolean",
+                  "const": true
+                }
+              }
+            }
+          }
+        },
+        "instance_methods": {
+          "type": "object",
+          "properties": {
+            "to_dict": {
+              "type": "object",
+              "description": "Convert event to dictionary for serialization",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "def to_dict(self) -> Dict[str, Any]"
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "Dict[str, Any]",
+                  "description": "Dictionary representation including all event data"
+                },
+                "performance": {
+                  "throughput": "79000+ events/sec",
+                  "serialization": "Pydantic-optimized"
+                }
+              }
+            },
+            "from_dict": {
+              "type": "object",
+              "description": "Create event instance from dictionary",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "@classmethod def from_dict(cls, data: Dict[str, Any]) -> 'Event'"
+                },
+                "parameters": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "string",
+                      "const": "Dict[str, Any]",
+                      "description": "Dictionary containing event data"
+                    }
+                  },
+                  "required": ["data"]
+                },
+                "returns": {
+                  "type": "string",
+                  "const": "Event",
+                  "description": "Event instance of the correct subclass"
+                },
+                "raises": [
+                  "ValidationError: If data doesn't match event schema",
+                  "ValueError: If event_type is missing or invalid"
+                ]
+              }
+            },
+            "model_validate": {
+              "type": "object",
+              "description": "Pydantic validation method",
+              "properties": {
+                "signature": {
+                  "type": "string",
+                  "const": "@classmethod def model_validate(cls, obj: Any) -> 'Event'"
+                },
+                "inherited_from": {
+                  "type": "string",
+                  "const": "BaseModel"
+                },
+                "description": {
+                  "type": "string",
+                  "const": "Validates and creates event instance with Pydantic validation"
+                }
+              }
+            }
+          }
+        },
+        "subclass_patterns": {
+          "type": "object",
+          "properties": {
+            "custom_event_creation": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string",
+                  "const": "class CustomEvent(Event): custom_field: str"
+                },
+                "automatic_fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "aggregate_id",
+                    "aggregate_type", 
+                    "aggregate_version",
+                    "event_type",
+                    "timestamp"
+                  ]
+                },
+                "validation": {
+                  "type": "string",
+                  "const": "Automatic Pydantic validation for all fields"
+                }
+              }
+            },
+            "naming_conventions": {
+              "type": "object",
+              "properties": {
+                "class_names": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "UserRegistered",
+                    "EmailChanged", 
+                    "OrderPlaced",
+                    "ProductCreated"
+                  ]
+                },
+                "event_type_derivation": {
+                  "type": "string",
+                  "const": "Automatically derived from class name (e.g., UserRegistered → 'UserRegistered')"
+                }
+              }
+            }
+          }
+        },
+        "serialization": {
+          "type": "object",
+          "properties": {
+            "json_serialization": {
+              "type": "object",
+              "properties": {
+                "method": {
+                  "type": "string",
+                  "const": "Pydantic model_dump_json()"
+                },
+                "performance": {
+                  "type": "string",
+                  "const": "High-performance JSON serialization"
+                },
+                "datetime_handling": {
+                  "type": "string",
+                  "const": "ISO 8601 format with timezone"
+                }
+              }
+            },
+            "database_storage": {
+              "type": "object",
+              "properties": {
+                "format": {
+                  "type": "string",
+                  "const": "JSON/JSONB columns in PostgreSQL/SQLite"
+                },
+                "compression": {
+                  "type": "boolean",
+                  "const": true,
+                  "description": "Automatic JSON compression for large events"
+                },
+                "indexing": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "const": [
+                    "aggregate_id",
+                    "aggregate_type",
+                    "event_type",
+                    "timestamp"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "integration_patterns": {
+          "type": "object",
+          "properties": {
+            "aggregate_integration": {
+              "type": "object",
+              "properties": {
+                "event_application": {
+                  "type": "string",
+                  "const": "aggregate.apply(event) automatically calls apply_{event_name_lower}(event)"
+                },
+                "naming_convention": {
+                  "type": "string",
+                  "const": "UserRegistered → apply_userregistered(event: UserRegistered)"
+                },
+                "automatic_routing": {
+                  "type": "boolean",
+                  "const": true
+                }
+              }
+            },
+            "event_store_integration": {
+              "type": "object",
+              "properties": {
+                "registration": {
+                  "type": "string",
+                  "const": "EventStore.register_event_class('UserRegistered', UserRegistered)"
+                },
+                "deserialization": {
+                  "type": "string",
+                  "const": "Automatic event reconstruction from stored JSON"
+                },
+                "type_safety": {
+                  "type": "string",
+                  "const": "Full type checking and validation on load"
+                }
+              }
+            },
+            "streaming_integration": {
+              "type": "object",
+              "properties": {
+                "publication": {
+                  "type": "string",
+                  "const": "Events automatically published to EventStreamer on save"
+                },
+                "filtering": {
+                  "type": "string",
+                  "const": "Subscription filters work with event_type and aggregate_type"
+                },
+                "real_time_delivery": {
+                  "type": "string",
+                  "const": "78k+ events/sec streaming performance"
+                }
+              }
+            }
+          }
+        },
+        "validation_rules": {
+          "type": "object",
+          "properties": {
+            "required_fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "const": [
+                "aggregate_id",
+                "aggregate_type",
+                "aggregate_version",
+                "event_type"
+              ]
+            },
+            "field_constraints": {
+              "type": "object",
+              "properties": {
+                "aggregate_id": {
+                  "type": "string",
+                  "const": "Non-empty string"
+                },
+                "aggregate_version": {
+                  "type": "string", 
+                  "const": "Positive integer >= 1"
+                },
+                "event_type": {
+                  "type": "string",
+                  "const": "Non-empty string, auto-derived from class name"
+                }
+              }
+            },
+            "custom_validation": {
+              "type": "string",
+              "const": "Subclasses can add @field_validator decorators for business rule validation"
+            }
+          }
+        },
+        "performance_characteristics": {
+          "type": "object",
+          "properties": {
+            "creation_speed": {
+              "type": "string",
+              "const": "79000+ events/sec"
+            },
+            "serialization_speed": {
+              "type": "string",
+              "const": "Pydantic-optimized JSON serialization"
+            },
+            "memory_efficiency": {
+              "type": "string",
+              "const": "Minimal overhead over raw dictionaries"
+            },
+            "validation_speed": {
+              "type": "string",
+              "const": "Compiled Pydantic validators"
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": {
+    "basic_event_definition": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "const": "class UserRegistered(Event):\n    name: str\n    email: str\n    \n    # aggregate_id, aggregate_type, event_type, timestamp auto-included"
+        },
+        "usage": {
+          "type": "string",
+          "const": "event = UserRegistered(aggregate_id='user-123', aggregate_type='User', aggregate_version=1, name='John', email='john@example.com')"
+        }
+      }
+    },
+    "validation_example": {
+      "type": "object",
+      "properties": {
+        "valid_event": {
+          "type": "string",
+          "const": "class EmailChanged(Event):\n    new_email: EmailStr  # Pydantic email validation\n    old_email: EmailStr"
+        },
+        "automatic_validation": {
+          "type": "string",
+          "const": "Validation happens automatically on construction and deserialization"
+        }
+      }
+    },
+    "serialization_example": {
+      "type": "object",
+      "properties": {
+        "to_dict": {
+          "type": "string",
+          "const": "data = event.to_dict()  # Returns: {'aggregate_id': 'user-123', 'event_type': 'UserRegistered', ...}"
+        },
+        "from_dict": {
+          "type": "string", 
+          "const": "event = UserRegistered.from_dict(data)  # Reconstructs typed event instance"
+        }
+      }
+    },
+    "aggregate_integration": {
+      "type": "object",
+      "properties": {
+        "event_handler": {
+          "type": "string",
+          "const": "class User(Aggregate):\n    def apply_userregistered(self, event: UserRegistered):\n        self.name = event.name\n        self.email = event.email"
+        },
+        "automatic_routing": {
+          "type": "string",
+          "const": "user.apply(user_registered_event)  # Automatically calls apply_userregistered()"
+        }
+      }
+    }
+  }
+}
