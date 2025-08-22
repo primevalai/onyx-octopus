@@ -18,11 +18,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install Protocol Buffers and OpenSSL
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
-
     - name: Build wheels
       uses: PyO3/maturin-action@v1
       with:
@@ -31,6 +26,13 @@ jobs:
         sccache: 'true'
         manylinux: auto
         working-directory: ./eventuali-python
+        before-script-linux: |
+          # Install development packages inside the manylinux container
+          if command -v yum >/dev/null 2>&1; then
+            yum update -y && yum install -y openssl-devel pkgconfig protobuf-devel
+          elif command -v apt-get >/dev/null 2>&1; then
+            apt-get update && apt-get install -y libssl-dev pkg-config protobuf-compiler
+          fi
       env:
         OPENSSL_STATIC: 1
         OPENSSL_VENDORED: 1
