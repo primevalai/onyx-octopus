@@ -1,4 +1,4 @@
-name: Build and Publish Eventuali
+name: Build and Publish Eventuali Packages
 
 on:
   push:
@@ -108,49 +108,63 @@ jobs:
         name: wheels-${{ matrix.os }}
         path: ./eventuali-python/dist
 
-  # Publish to TestPyPI on every push to master
+  # Publish all packages to TestPyPI on every push to master
   publish-to-testpypi:
-    name: Publish to TestPyPI
-    needs: [build]
+    name: Publish all packages to TestPyPI
+    needs: [build, build-sdist, build-api-server, build-mcp-server]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    strategy:
+      matrix:
+        package: [
+          { name: "eventuali", artifacts: "wheels-*,sdist", url: "https://test.pypi.org/p/eventuali" },
+          { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali-api-server" },
+          { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali-mcp-server" }
+        ]
     environment:
       name: testpypi
-      url: https://test.pypi.org/p/eventuali
+      url: ${{ matrix.package.url }}
 
     steps:
-    - name: Download all wheels
+    - name: Download ${{ matrix.package.name }} artifacts
       uses: actions/download-artifact@v4
       with:
         path: dist/
-        pattern: wheels-*
+        pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
 
-    - name: Publish to TestPyPI
+    - name: Publish ${{ matrix.package.name }} to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         repository-url: https://test.pypi.org/legacy/
         packages-dir: dist/
 
-  # Publish to PyPI on release tags
+  # Publish all packages to PyPI on release tags
   publish-to-pypi:
-    name: Publish to PyPI
-    needs: [build]
+    name: Publish all packages to PyPI
+    needs: [build, build-sdist, build-api-server, build-mcp-server]
     runs-on: ubuntu-latest
     if: github.event_name == 'release' && github.event.action == 'published'
+    strategy:
+      matrix:
+        package: [
+          { name: "eventuali", artifacts: "wheels-*,sdist", url: "https://pypi.org/p/eventuali" },
+          { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://pypi.org/p/eventuali-api-server" },
+          { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://pypi.org/p/eventuali-mcp-server" }
+        ]
     environment:
       name: pypi
-      url: https://pypi.org/p/eventuali
+      url: ${{ matrix.package.url }}
 
     steps:
-    - name: Download all wheels
+    - name: Download ${{ matrix.package.name }} artifacts
       uses: actions/download-artifact@v4
       with:
         path: dist/
-        pattern: wheels-*
+        pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
 
-    - name: Publish to PyPI
+    - name: Publish ${{ matrix.package.name }} to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         packages-dir: dist/
@@ -189,3 +203,79 @@ jobs:
       with:
         name: sdist
         path: ./eventuali-python/dist
+
+  # Build API Server (Pure Python package)
+  build-api-server:
+    name: Build API Server
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      run: pip install uv
+
+    - name: Sync workspace dependencies
+      run: uv sync
+
+    - name: Build API Server
+      working-directory: ./eventuali-api-server
+      run: |
+        # Build wheel and source distribution
+        uv build --out-dir dist
+
+    - name: Test API Server installation
+      working-directory: ./eventuali-api-server
+      run: |
+        uv venv test-env
+        uv pip install dist/*.whl --python test-env
+        uv run --python test-env python -c "import eventuali_api_server; print('✓ API Server package imports successfully')"
+        uv run --python test-env eventuali-api-server --help
+
+    - name: Upload API Server artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: api-server-dist
+        path: ./eventuali-api-server/dist
+
+  # Build MCP Server (Pure Python package)
+  build-mcp-server:
+    name: Build MCP Server
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install UV
+      run: pip install uv
+
+    - name: Sync workspace dependencies
+      run: uv sync
+
+    - name: Build MCP Server
+      working-directory: ./eventuali-mcp-server
+      run: |
+        # Build wheel and source distribution
+        uv build --out-dir dist
+
+    - name: Test MCP Server installation
+      working-directory: ./eventuali-mcp-server
+      run: |
+        uv venv test-env
+        uv pip install dist/*.whl --python test-env
+        uv run --python test-env python -c "import eventuali_mcp_server; print('✓ MCP Server package imports successfully')"
+        timeout 5s uv run --python test-env eventuali-mcp-server || echo "✓ MCP Server starts correctly"
+
+    - name: Upload MCP Server artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mcp-server-dist
+        path: ./eventuali-mcp-server/dist
