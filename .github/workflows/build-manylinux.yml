@@ -28,18 +28,24 @@ jobs:
         working-directory: ./eventuali-python
         before-script-linux: |
           # Install development packages inside the manylinux container
+          echo "Target architecture: ${{ matrix.target }}"
+          echo "Container info:"
+          cat /etc/os-release || echo "No os-release found"
+          
           if command -v yum >/dev/null 2>&1; then
+            echo "Using yum package manager"
             yum update -y && yum install -y openssl-devel pkgconfig protobuf-devel
-            # For aarch64 cross-compilation, install cross-compilation toolchain
-            if [ "${{ matrix.target }}" = "aarch64" ]; then
-              yum install -y gcc-aarch64-linux-gnu openssl-devel.aarch64 || true
-            fi
           elif command -v apt-get >/dev/null 2>&1; then
+            echo "Using apt package manager" 
             apt-get update && apt-get install -y libssl-dev pkg-config protobuf-compiler
-            # For aarch64 cross-compilation, install cross-compilation toolchain  
-            if [ "${{ matrix.target }}" = "aarch64" ]; then
-              apt-get install -y gcc-aarch64-linux-gnu libssl-dev:arm64 || true
-            fi
+          fi
+          
+          # For aarch64, force vendored OpenSSL and add debug info
+          if [ "${{ matrix.target }}" = "aarch64" ]; then
+            echo "Setting up aarch64 cross-compilation with vendored OpenSSL"
+            echo "OPENSSL_STATIC=1" >> $GITHUB_ENV
+            echo "OPENSSL_VENDORED=1" >> $GITHUB_ENV
+            echo "OPENSSL_NO_VENDOR=0" >> $GITHUB_ENV
           fi
       env:
         OPENSSL_STATIC: 1
