@@ -129,9 +129,15 @@ jobs:
     - name: Download ${{ matrix.package.name }} artifacts
       uses: actions/download-artifact@v4
       with:
-        path: dist/
+        path: artifacts/
         pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
+
+    - name: Prepare distribution files
+      run: |
+        mkdir -p dist
+        find artifacts/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} cp {} dist/
+        ls -la dist/
 
     - name: Publish ${{ matrix.package.name }} to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
@@ -160,9 +166,15 @@ jobs:
     - name: Download ${{ matrix.package.name }} artifacts
       uses: actions/download-artifact@v4
       with:
-        path: dist/
+        path: artifacts/
         pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
+
+    - name: Prepare distribution files
+      run: |
+        mkdir -p dist
+        find artifacts/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} cp {} dist/
+        ls -la dist/
 
     - name: Publish ${{ matrix.package.name }} to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
