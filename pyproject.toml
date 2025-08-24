@@ -9,6 +9,7 @@ members = [
 # Use local workspace members for development
 eventuali = { workspace = true }
 eventuali-api-server = { workspace = true }
+eventuali-mcp-server = { workspace = true }
 
 
 [tool.black]
