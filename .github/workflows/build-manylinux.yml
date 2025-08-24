@@ -26,6 +26,19 @@ jobs:
         sccache: 'true'
         manylinux: auto
         working-directory: ./eventuali-python
+        before-script-linux: |
+          # Only install packages for x86_64 native builds
+          # For aarch64 cross-compilation, we rely on vendored OpenSSL
+          if [ "${{ matrix.target }}" = "x86_64" ]; then
+            echo "Installing OpenSSL for x86_64 native build"
+            if command -v yum >/dev/null 2>&1; then
+              yum update -y && yum install -y openssl-devel pkg-config
+            elif command -v apt-get >/dev/null 2>&1; then
+              apt-get update && apt-get install -y libssl-dev pkg-config
+            fi
+          else
+            echo "Using vendored OpenSSL for ${{ matrix.target }} cross-compilation"
+          fi
       env:
         OPENSSL_STATIC: 1
         OPENSSL_VENDORED: 1
