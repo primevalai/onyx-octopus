@@ -246,6 +246,7 @@ jobs:
   build-mcp-server:
     name: Build MCP Server
     runs-on: ubuntu-latest
+    needs: [build-api-server]
     steps:
     - uses: actions/checkout@v4
 
@@ -266,10 +267,19 @@ jobs:
         # Build wheel and source distribution
         uv build --out-dir dist
 
+    - name: Download API Server artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: api-server-dist
+        path: ./api-server-dist
+
     - name: Test MCP Server installation
       working-directory: ./eventuali-mcp-server
       run: |
         uv venv test-env
+        # Install API server first (workspace dependency)
+        uv pip install ../api-server-dist/*.whl --python test-env
+        # Then install MCP server
         uv pip install dist/*.whl --python test-env
         uv run --python test-env python -c "import eventuali_mcp_server; print('✓ MCP Server package imports successfully')"
         timeout 5s uv run --python test-env eventuali-mcp-server || echo "✓ MCP Server starts correctly"
