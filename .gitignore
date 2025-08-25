@@ -1,3 +1,6 @@
+# Manual entries
+.inbox/
+
 # Rust
 /target/
 **/*.rs.bk

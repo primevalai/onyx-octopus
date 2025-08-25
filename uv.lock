@@ -362,7 +362,7 @@ wheels = [
 
 [[package]]
 name = "eventuali"
-version = "0.1.1"
+version = "0.0.0"
 source = { editable = "eventuali-python" }
 dependencies = [
     { name = "asyncio" },
@@ -424,7 +424,7 @@ dev = [
 
 [[package]]
 name = "eventuali-api-server"
-version = "0.1.0"
+version = "0.0.0"
 source = { editable = "eventuali-api-server" }
 dependencies = [
     { name = "click" },
@@ -468,7 +468,7 @@ provides-extras = ["dev"]
 
 [[package]]
 name = "eventuali-mcp-server"
-version = "0.2.0"
+version = "0.0.0"
 source = { editable = "eventuali-mcp-server" }
 dependencies = [
     { name = "eventuali" },
