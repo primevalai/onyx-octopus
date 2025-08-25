@@ -76,7 +76,7 @@ jobs:
         # Clean existing compiled artifacts
         Remove-Item -Path "python\eventuali\_eventuali.pyd" -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "python\eventuali\_eventuali.*.so" -Force -ErrorAction SilentlyContinue
-        uv tool install maturin
+        uv add maturin
         uv run maturin build --release --out dist
       shell: pwsh
       env:
