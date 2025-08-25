@@ -134,12 +134,23 @@ jobs:
         path: artifacts/
         pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
+        
+    - name: Debug downloaded artifacts
+      run: |
+        echo "Artifact pattern used: ${{ matrix.package.artifacts }}"
+        echo "All downloaded content:"
+        find artifacts/ -type f | head -20
 
     - name: Prepare distribution files
       run: |
         mkdir -p dist
-        find artifacts/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} cp {} dist/
+        echo "Downloaded artifacts:"
+        find artifacts/ -type f -name "*.whl" -o -name "*.tar.gz" | head -20
+        echo "Copying artifacts to dist/:"
+        find artifacts/ -name "*.whl" -o -name "*.tar.gz" -exec cp {} dist/ \;
+        echo "Final dist/ contents:"
         ls -la dist/
+        echo "Dist file count: $(ls -1 dist/ | wc -l)"
 
     - name: Publish ${{ matrix.package.name }} to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
@@ -171,12 +182,23 @@ jobs:
         path: artifacts/
         pattern: ${{ matrix.package.artifacts }}
         merge-multiple: true
+        
+    - name: Debug downloaded artifacts
+      run: |
+        echo "Artifact pattern used: ${{ matrix.package.artifacts }}"
+        echo "All downloaded content:"
+        find artifacts/ -type f | head -20
 
     - name: Prepare distribution files
       run: |
         mkdir -p dist
-        find artifacts/ -name "*.whl" -o -name "*.tar.gz" | xargs -I {} cp {} dist/
+        echo "Downloaded artifacts:"
+        find artifacts/ -type f -name "*.whl" -o -name "*.tar.gz" | head -20
+        echo "Copying artifacts to dist/:"
+        find artifacts/ -name "*.whl" -o -name "*.tar.gz" -exec cp {} dist/ \;
+        echo "Final dist/ contents:"
         ls -la dist/
+        echo "Dist file count: $(ls -1 dist/ | wc -l)"
 
     - name: Publish ${{ matrix.package.name }} to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
