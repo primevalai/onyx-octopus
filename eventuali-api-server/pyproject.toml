@@ -6,6 +6,7 @@ authors = [
     { name = "Primeval AI", email = "noreply@primevalai.com" }
 ]
 license = { text = "MIT" }
+readme = "README.md"
 requires-python = ">=3.8"
 keywords = ["eventuali", "event-sourcing", "fastapi", "sse", "real-time"]
 classifiers = [

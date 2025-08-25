@@ -1,4 +1,8 @@
-# Eventuali API Server
+<div align="center">
+  <img src="https://raw.githubusercontent.com/primevalai/onyx-octopus/main/assets/onyx-octopus-avatar.png" alt="Onyx Octopus" width="300">
+  
+  # Eventuali API Server
+</div>
 
 A FastAPI-based REST and Server-Sent Events (SSE) API server for the Eventuali event sourcing system.
 

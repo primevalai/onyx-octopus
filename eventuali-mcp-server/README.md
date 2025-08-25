@@ -1,4 +1,8 @@
-# Eventuali MCP Server
+<div align="center">
+  <img src="https://raw.githubusercontent.com/primevalai/onyx-octopus/main/assets/onyx-octopus-avatar.png" alt="Onyx Octopus" width="300">
+  
+  # Eventuali MCP Server
+</div>
 
 A Model Context Protocol (MCP) server for the Eventuali event sourcing system, providing real-time event streaming, agent lifecycle management, and workflow orchestration capabilities with integrated API server support.
 
