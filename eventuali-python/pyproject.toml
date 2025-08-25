@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "eventuali"
-version = "0.1.1"
+version = "0.0.0"
 description = "High-performance event sourcing library combining Rust performance with Python ease of use"
 authors = [{name = "PrimevalAI", email = "info@primeval.ai"}]
 license = {text = "MIT OR Apache-2.0"}

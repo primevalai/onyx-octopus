@@ -1,6 +1,6 @@
 [project]
 name = "eventuali-api-server"
-version = "0.1.0"
+version = "0.0.0"
 description = "FastAPI server for Eventuali event sourcing system with real-time streaming"
 authors = [
     { name = "Primeval AI", email = "noreply@primevalai.com" }

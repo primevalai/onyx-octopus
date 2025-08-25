@@ -1,6 +1,6 @@
 [project]
 name = "eventuali-mcp-server"
-version = "0.2.0"
+version = "0.0.0"
 description = "MCP server and client for Eventuali event sourcing system with integrated API server"
 authors = [
     { name = "Primeval AI", email = "noreply@primevalai.com" }
