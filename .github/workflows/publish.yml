@@ -76,7 +76,7 @@ jobs:
         # Clean existing compiled artifacts
         Remove-Item -Path "python\eventuali\_eventuali.pyd" -Force -ErrorAction SilentlyContinue
         Remove-Item -Path "python\eventuali\_eventuali.*.so" -Force -ErrorAction SilentlyContinue
-        uv add maturin
+        uv tool install maturin
         uv run maturin build --release --out dist
       shell: pwsh
       env:
@@ -97,8 +97,10 @@ jobs:
       working-directory: ./eventuali-python
       run: |
         uv venv test-env
-        uv pip install dist/*.whl --python test-env
-        test-env\Scripts\activate && python -c "import eventuali; print('Package imports successfully')"
+        $wheel = Get-ChildItem -Path "dist\*.whl" | Select-Object -First 1
+        uv pip install $wheel.FullName --python test-env
+        test-env\Scripts\activate.ps1; python -c "import eventuali; print('Package imports successfully')"
+      shell: pwsh
       env:
         PYTHONIOENCODING: utf-8
 
