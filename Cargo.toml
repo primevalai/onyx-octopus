@@ -25,12 +25,12 @@ rusqlite = { version = "0.32", features = ["bundled", "serde_json"] }
 
 # Observability dependencies
 opentelemetry = "0.23"
-opentelemetry-otlp = "0.16"
+opentelemetry-otlp = { version = "0.16", default-features = false, features = ["grpc-tonic"] }
 opentelemetry_sdk = "0.23"
 tracing-opentelemetry = "0.23"
 prometheus = "0.13"
 metrics = "0.21"
-metrics-exporter-prometheus = "0.13"
+metrics-exporter-prometheus = { version = "0.13", default-features = false, features = ["async-runtime", "http-listener"] }
 log = "0.4"
 tracing-log = "0.2"
 

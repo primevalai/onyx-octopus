@@ -56,13 +56,24 @@ jobs:
             export CXXFLAGS_aarch64_unknown_linux_gnu="-march=armv8-a -D__ARM_ARCH=8"
             export TARGET_CC=aarch64-linux-gnu-gcc
             export TARGET_AR=aarch64-linux-gnu-ar
+            # Force OpenSSL vendoring for all build scripts
+            export OPENSSL_STATIC=1
+            export OPENSSL_VENDORED=1
+            export OPENSSL_NO_VENDOR=0
+            export OPENSSL_LIB_DIR=""
+            export OPENSSL_INCLUDE_DIR=""
           else
             echo "Using vendored OpenSSL for ${{ matrix.target }} cross-compilation"
           fi
       env:
+        # Force vendored OpenSSL for all dependencies
         OPENSSL_STATIC: 1
         OPENSSL_VENDORED: 1
+        OPENSSL_NO_VENDOR: 0
         PKG_CONFIG_ALLOW_CROSS: 1
+        # Disable system OpenSSL detection completely
+        OPENSSL_LIB_DIR: ""
+        OPENSSL_INCLUDE_DIR: ""
         # Fix ring crate ARM64 compilation issues
         CFLAGS_aarch64_unknown_linux_gnu: "-march=armv8-a -D__ARM_ARCH=8"
         CXXFLAGS_aarch64_unknown_linux_gnu: "-march=armv8-a -D__ARM_ARCH=8"
