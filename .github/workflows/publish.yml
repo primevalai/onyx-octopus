@@ -119,7 +119,7 @@ jobs:
     strategy:
       matrix:
         package: [
-          { name: "eventuali", artifacts: "wheels-*,sdist,wheels-manylinux-*", url: "https://test.pypi.org/p/eventuali" },
+          { name: "eventuali", artifacts: "wheels-*", sdist_artifacts: "sdist", url: "https://test.pypi.org/p/eventuali" },
           { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali-api-server" },
           { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali-mcp-server" }
         ]
@@ -128,7 +128,7 @@ jobs:
       url: ${{ matrix.package.url }}
 
     steps:
-    - name: Download ${{ matrix.package.name }} artifacts
+    - name: Download ${{ matrix.package.name }} wheel artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts/
@@ -136,9 +136,19 @@ jobs:
         merge-multiple: true
       continue-on-error: true
         
+    - name: Download ${{ matrix.package.name }} sdist artifacts
+      if: matrix.package.sdist_artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts/
+        pattern: ${{ matrix.package.sdist_artifacts }}
+        merge-multiple: true
+      continue-on-error: true
+        
     - name: Debug downloaded artifacts
       run: |
-        echo "Artifact pattern used: ${{ matrix.package.artifacts }}"
+        echo "Wheel artifacts pattern: ${{ matrix.package.artifacts }}"
+        echo "Sdist artifacts pattern: ${{ matrix.package.sdist_artifacts || 'none' }}"
         echo "Working directory: $(pwd)"
         echo "All content in current directory:"
         ls -la
@@ -180,7 +190,7 @@ jobs:
     strategy:
       matrix:
         package: [
-          { name: "eventuali", artifacts: "wheels-*,sdist,wheels-manylinux-*", url: "https://pypi.org/p/eventuali" },
+          { name: "eventuali", artifacts: "wheels-*", sdist_artifacts: "sdist", url: "https://pypi.org/p/eventuali" },
           { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://pypi.org/p/eventuali-api-server" },
           { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://pypi.org/p/eventuali-mcp-server" }
         ]
