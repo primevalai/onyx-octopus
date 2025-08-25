@@ -1,5 +1,5 @@
 [project]
-name = "eventuali_mcp_server"
+name = "eventuali-mcp-server"
 version = "0.2.0"
 description = "MCP server and client for Eventuali event sourcing system with integrated API server"
 authors = [
@@ -27,7 +27,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "eventuali",
     "uvicorn>=0.23.0",
-    "eventuali_api_server",
+    "eventuali-api-server",
 ]
 
 [project.optional-dependencies]

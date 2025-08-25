@@ -1,5 +1,5 @@
 [project]
-name = "eventuali_api_server"
+name = "eventuali-api-server"
 version = "0.1.0"
 description = "FastAPI server for Eventuali event sourcing system with real-time streaming"
 authors = [
