@@ -120,8 +120,8 @@ jobs:
       matrix:
         package: [
           { name: "eventuali", artifacts: "wheels-*", sdist_artifacts: "sdist", url: "https://test.pypi.org/p/eventuali" },
-          { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali-api-server" },
-          { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali-mcp-server" }
+          { name: "eventuali_api_server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali_api_server" },
+          { name: "eventuali_mcp_server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali_mcp_server" }
         ]
     environment:
       name: testpypi
@@ -191,8 +191,8 @@ jobs:
       matrix:
         package: [
           { name: "eventuali", artifacts: "wheels-*", sdist_artifacts: "sdist", url: "https://pypi.org/p/eventuali" },
-          { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://pypi.org/p/eventuali-api-server" },
-          { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://pypi.org/p/eventuali-mcp-server" }
+          { name: "eventuali_api_server", artifacts: "api-server-dist", url: "https://pypi.org/p/eventuali_api_server" },
+          { name: "eventuali_mcp_server", artifacts: "mcp-server-dist", url: "https://pypi.org/p/eventuali_mcp_server" }
         ]
     environment:
       name: pypi
