@@ -90,7 +90,7 @@ jobs:
       run: |
         uv venv test-env
         uv pip install dist/*.whl --python test-env
-        uv run --python test-env python -c "import eventuali; print('✓ Package imports successfully')"
+        source test-env/bin/activate && python -c "import eventuali; print('✓ Package imports successfully')"
         
     - name: Test wheel installation (Windows)
       if: matrix.os == 'windows-latest'
@@ -98,7 +98,7 @@ jobs:
       run: |
         uv venv test-env
         uv pip install dist/*.whl --python test-env
-        uv run --python test-env python -c "import eventuali; print('Package imports successfully')"
+        test-env\Scripts\activate && python -c "import eventuali; print('Package imports successfully')"
       env:
         PYTHONIOENCODING: utf-8
 
@@ -117,7 +117,7 @@ jobs:
     strategy:
       matrix:
         package: [
-          { name: "eventuali", artifacts: "wheels-*,sdist", url: "https://test.pypi.org/p/eventuali" },
+          { name: "eventuali", artifacts: "wheels-*,sdist,wheels-manylinux-*", url: "https://test.pypi.org/p/eventuali" },
           { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali-api-server" },
           { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali-mcp-server" }
         ]
@@ -154,7 +154,7 @@ jobs:
     strategy:
       matrix:
         package: [
-          { name: "eventuali", artifacts: "wheels-*,sdist", url: "https://pypi.org/p/eventuali" },
+          { name: "eventuali", artifacts: "wheels-*,sdist,wheels-manylinux-*", url: "https://pypi.org/p/eventuali" },
           { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://pypi.org/p/eventuali-api-server" },
           { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://pypi.org/p/eventuali-mcp-server" }
         ]
@@ -245,8 +245,8 @@ jobs:
       run: |
         uv venv test-env
         uv pip install dist/*.whl --python test-env
-        uv run --python test-env python -c "import eventuali_api_server; print('✓ API Server package imports successfully')"
-        uv run --python test-env eventuali-api-server --help
+        source test-env/bin/activate && python -c "import eventuali_api_server; print('✓ API Server package imports successfully')"
+        source test-env/bin/activate && eventuali-api-server --help
 
     - name: Upload API Server artifacts
       uses: actions/upload-artifact@v4
@@ -293,8 +293,8 @@ jobs:
         uv pip install ../api-server-dist/*.whl --python test-env
         # Then install MCP server
         uv pip install dist/*.whl --python test-env
-        uv run --python test-env python -c "import eventuali_mcp_server; print('✓ MCP Server package imports successfully')"
-        timeout 5s uv run --python test-env eventuali-mcp-server || echo "✓ MCP Server starts correctly"
+        source test-env/bin/activate && python -c "import eventuali_mcp_server; print('✓ MCP Server package imports successfully')"
+        timeout 5s bash -c "source test-env/bin/activate && eventuali-mcp-server" || echo "✓ MCP Server starts correctly"
 
     - name: Upload MCP Server artifacts
       uses: actions/upload-artifact@v4
