@@ -110,67 +110,142 @@ jobs:
         name: wheels-${{ matrix.os }}
         path: ./eventuali-python/dist
 
+  # Inject dev versions for TestPyPI builds
+  inject-dev-versions:
+    name: Inject dev versions for TestPyPI
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Inject dev version numbers
+      run: |
+        DEV_VERSION=".dev${{ github.run_number }}"
+        echo "Injecting dev version suffix: $DEV_VERSION"
+        
+        # Update eventuali version
+        sed -i "s/version = \"\([0-9]*\.[0-9]*\.[0-9]*\)\"/version = \"\1$DEV_VERSION\"/" eventuali-python/pyproject.toml
+        
+        # Update API server version  
+        sed -i "s/version = \"\([0-9]*\.[0-9]*\.[0-9]*\)\"/version = \"\1$DEV_VERSION\"/" eventuali-api-server/pyproject.toml
+        
+        # Update MCP server version
+        sed -i "s/version = \"\([0-9]*\.[0-9]*\.[0-9]*\)\"/version = \"\1$DEV_VERSION\"/" eventuali-mcp-server/pyproject.toml
+        
+        echo "Updated versions:"
+        grep "version = " eventuali-python/pyproject.toml eventuali-api-server/pyproject.toml eventuali-mcp-server/pyproject.toml
+        
+    - name: Upload modified source for builds
+      uses: actions/upload-artifact@v4
+      with:
+        name: source-with-dev-versions
+        path: .
+
+  # Build packages with dev versions for TestPyPI
+  build-for-testpypi:
+    name: Build packages with dev versions
+    needs: [inject-dev-versions]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download modified source
+      uses: actions/download-artifact@v4
+      with:
+        name: source-with-dev-versions
+        path: .
+        
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Install Protocol Buffers and OpenSSL
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y protobuf-compiler libssl-dev pkg-config
+
+    - name: Install UV
+      run: pip install uv
+
+    - name: Install maturin
+      run: |
+        uv tool install maturin
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Build eventuali wheels
+      working-directory: ./eventuali-python
+      run: |
+        uv run maturin build --release --out dist
+      env:
+        OPENSSL_STATIC: 1
+        OPENSSL_VENDORED: 1
+        OPENSSL_NO_VENDOR: 0
+        
+    - name: Build eventuali sdist
+      working-directory: ./eventuali-python
+      run: uv run maturin sdist --out dist
+      env:
+        OPENSSL_STATIC: 1
+        OPENSSL_VENDORED: 1
+        OPENSSL_NO_VENDOR: 0
+
+    - name: Build API server
+      working-directory: ./eventuali-api-server
+      run: uv build --out-dir dist
+
+    - name: Build MCP server  
+      working-directory: ./eventuali-mcp-server
+      run: uv build --out-dir dist
+
+    - name: Upload all packages for TestPyPI
+      uses: actions/upload-artifact@v4
+      with:
+        name: testpypi-packages
+        path: |
+          eventuali-python/dist
+          eventuali-api-server/dist
+          eventuali-mcp-server/dist
+
   # Publish all packages to TestPyPI on every push to master
   publish-to-testpypi:
     name: Publish all packages to TestPyPI
-    needs: [build, build-sdist, build-api-server, build-mcp-server]
+    needs: [build-for-testpypi]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     strategy:
       matrix:
         package: [
-          { name: "eventuali", artifacts: "wheels-*", sdist_artifacts: "sdist", url: "https://test.pypi.org/p/eventuali" },
-          { name: "eventuali-api-server", artifacts: "api-server-dist", url: "https://test.pypi.org/p/eventuali-api-server" },
-          { name: "eventuali-mcp-server", artifacts: "mcp-server-dist", url: "https://test.pypi.org/p/eventuali-mcp-server" }
+          { name: "eventuali", artifacts: "testpypi-packages", url: "https://test.pypi.org/p/eventuali" },
+          { name: "eventuali-api-server", artifacts: "testpypi-packages", url: "https://test.pypi.org/p/eventuali-api-server" },
+          { name: "eventuali-mcp-server", artifacts: "testpypi-packages", url: "https://test.pypi.org/p/eventuali-mcp-server" }
         ]
     environment:
       name: testpypi
       url: ${{ matrix.package.url }}
 
     steps:
-    - name: Download ${{ matrix.package.name }} wheel artifacts
+    - name: Download TestPyPI packages
       uses: actions/download-artifact@v4
       with:
+        name: testpypi-packages
         path: artifacts/
-        pattern: ${{ matrix.package.artifacts }}
-        merge-multiple: true
-      continue-on-error: true
-        
-    - name: Download ${{ matrix.package.name }} sdist artifacts
-      if: matrix.package.sdist_artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts/
-        pattern: ${{ matrix.package.sdist_artifacts }}
-        merge-multiple: true
-      continue-on-error: true
         
     - name: Debug downloaded artifacts
       run: |
-        echo "Wheel artifacts pattern: ${{ matrix.package.artifacts }}"
-        echo "Sdist artifacts pattern: ${{ matrix.package.sdist_artifacts || 'none' }}"
+        echo "Package: ${{ matrix.package.name }}"
         echo "Working directory: $(pwd)"
         echo "All content in current directory:"
         ls -la
-        echo "Checking if artifacts directory exists:"
-        if [ -d "artifacts/" ]; then
-          echo "Artifacts directory found, contents:"
-          find artifacts/ -type f | head -20
-        else
-          echo "Artifacts directory not found"
-        fi
+        echo "Artifacts directory contents:"
+        find artifacts/ -type f | head -20
 
     - name: Prepare distribution files
       run: |
         mkdir -p dist
-        echo "Downloaded artifacts:"
-        if [ -d "artifacts/" ]; then
-          find artifacts/ -type f -name "*.whl" -o -name "*.tar.gz" | head -20
-          echo "Copying artifacts to dist/:"
-          find artifacts/ -name "*.whl" -o -name "*.tar.gz" -exec cp {} dist/ \;
-        else
-          echo "No artifacts directory found - skipping copy"
-        fi
+        echo "Copying all packages to dist/:"
+        find artifacts/ -name "*.whl" -o -name "*.tar.gz" -exec cp {} dist/ \;
         echo "Final dist/ contents:"
         ls -la dist/
         echo "Dist file count: $(ls -1 dist/ | wc -l)"
