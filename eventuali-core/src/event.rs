@@ -1,9 +1,57 @@
+//! Core event types and structures for the Eventuali event sourcing library.
+//!
+//! This module defines the fundamental building blocks of event sourcing:
+//! - [`Event`] - The core event structure containing all event data
+//! - [`EventData`] - Flexible event payload supporting JSON and Protocol Buffers
+//! - [`EventMetadata`] - Correlation, causation, and tracing information
+//!
+//! # Example
+//!
+//! ```rust
+//! use eventuali_core::{Event, EventData, EventMetadata};
+//! use chrono::Utc;
+//! use serde_json::json;
+//! use uuid::Uuid;
+//!
+//! let event = Event {
+//!     id: Uuid::new_v4(),
+//!     aggregate_id: "user-123".to_string(),
+//!     aggregate_type: "User".to_string(),
+//!     event_type: "UserRegistered".to_string(),
+//!     event_version: 1,
+//!     aggregate_version: 1,
+//!     data: EventData::from_json(&json!({
+//!         "name": "Alice",
+//!         "email": "alice@example.com"
+//!     })).unwrap(),
+//!     metadata: EventMetadata::default(),
+//!     timestamp: Utc::now(),
+//! };
+//! ```
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+/// Unique identifier for events, using UUID for global uniqueness
 pub type EventId = Uuid;
 
+/// Core event structure representing a domain event in the event store.
+///
+/// Events are immutable records of things that happened in your domain.
+/// Each event belongs to an aggregate and represents a state change.
+///
+/// # Fields
+///
+/// * `id` - Unique identifier for this event
+/// * `aggregate_id` - ID of the aggregate this event belongs to
+/// * `aggregate_type` - Type of aggregate (e.g., "User", "Order")
+/// * `event_type` - Type of event (e.g., "UserRegistered", "OrderCreated")
+/// * `event_version` - Schema version of the event type
+/// * `aggregate_version` - Version of the aggregate after this event
+/// * `data` - The event payload (JSON or Protocol Buffers)
+/// * `metadata` - Additional event metadata for tracing and correlation
+/// * `timestamp` - When the event occurred
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Event {
     pub id: EventId,
@@ -17,14 +65,53 @@ pub struct Event {
     pub timestamp: DateTime<Utc>,
 }
 
+/// Event payload data supporting multiple serialization formats.
+///
+/// EventData provides flexibility in how you store event payloads:
+/// - JSON for human-readable, schema-flexible events
+/// - Protocol Buffers for compact, strongly-typed events
+///
+/// # Examples
+///
+/// ```rust
+/// use eventuali_core::EventData;
+/// use serde_json::json;
+///
+/// // JSON event data
+/// let json_data = EventData::from_json(&json!({
+///     "user_id": "123",
+///     "action": "login"
+/// })).unwrap();
+///
+/// // Protocol Buffer event data
+/// let proto_data = EventData::Protobuf(vec![1, 2, 3, 4]);
+/// ```
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EventData {
     Json(serde_json::Value),
     Protobuf(Vec<u8>),
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[derive(Default)]
+/// Metadata associated with events for tracing, correlation, and context.
+///
+/// EventMetadata provides essential context for event processing:
+/// - Causation and correlation IDs for distributed tracing
+/// - User context for audit trails
+/// - Custom headers for additional context
+///
+/// # Example
+///
+/// ```rust
+/// use eventuali_core::EventMetadata;
+/// use uuid::Uuid;
+/// use std::collections::HashMap;
+///
+/// let mut metadata = EventMetadata::default();
+/// metadata.user_id = Some("user-123".to_string());
+/// metadata.correlation_id = Some(Uuid::new_v4());
+/// metadata.headers.insert("source".to_string(), "web-app".to_string());
+/// ```
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct EventMetadata {
     pub causation_id: Option<EventId>,
     pub correlation_id: Option<EventId>,
@@ -33,6 +120,35 @@ pub struct EventMetadata {
 }
 
 impl Event {
+    /// Creates a new event with the specified parameters.
+    ///
+    /// This is a convenience constructor that generates a new UUID for the event ID
+    /// and sets the timestamp to the current UTC time.
+    ///
+    /// # Arguments
+    ///
+    /// * `aggregate_id` - ID of the aggregate this event belongs to
+    /// * `aggregate_type` - Type of the aggregate
+    /// * `event_type` - Type of the event
+    /// * `event_version` - Schema version of the event
+    /// * `aggregate_version` - Version of the aggregate after this event
+    /// * `data` - The event payload
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use eventuali_core::{Event, EventData};
+    /// use serde_json::json;
+    ///
+    /// let event = Event::new(
+    ///     "user-123".to_string(),
+    ///     "User".to_string(),
+    ///     "UserRegistered".to_string(),
+    ///     1,
+    ///     1,
+    ///     EventData::from_json(&json!({"name": "Alice"})).unwrap(),
+    /// );
+    /// ```
     pub fn new(
         aggregate_id: String,
         aggregate_type: String,

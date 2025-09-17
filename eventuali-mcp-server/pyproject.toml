@@ -42,10 +42,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/primevalai/eventuali-mcp-server"
-Repository = "https://github.com/primevalai/eventuali-mcp-server"
-Documentation = "https://github.com/primevalai/eventuali-mcp-server#readme"
-"Bug Reports" = "https://github.com/primevalai/eventuali-mcp-server/issues"
+Homepage = "https://github.com/primevalai/onyx-octopus"
+Repository = "https://github.com/primevalai/onyx-octopus"
+Documentation = "https://github.com/primevalai/onyx-octopus"
+"Bug Reports" = "https://github.com/primevalai/onyx-octopus/issues"
 
 [project.scripts]
 eventuali-mcp-server = "eventuali_mcp_server.main:main"

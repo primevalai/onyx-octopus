@@ -1,3 +1,35 @@
+//! Real-time event streaming and projections.
+//!
+//! This module provides real-time event streaming capabilities for reactive
+//! event sourcing architectures:
+//! - [`EventStreamer`] trait for streaming implementations
+//! - [`InMemoryEventStreamer`] for development and testing
+//! - [`Projection`] trait for building read models
+//! - Subscription management and filtering
+//!
+//! # Example
+//!
+//! ```rust
+//! use eventuali_core::{InMemoryEventStreamer, SubscriptionBuilder};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! let streamer = InMemoryEventStreamer::new();
+//!
+//! // Subscribe to user events
+//! let subscription = SubscriptionBuilder::new()
+//!     .aggregate_type("User".to_string())
+//!     .build();
+//!
+//! let mut receiver = streamer.subscribe(subscription).await?;
+//!
+//! // Process events as they arrive
+//! while let Ok(stream_event) = receiver.recv().await {
+//!     println!("Received event: {}", stream_event.event.event_type);
+//! }
+//! # Ok(())
+//! # }
+//! ```
+
 use crate::{Event, Result, EventualiError};
 use async_trait::async_trait;
 use tokio::sync::broadcast;
@@ -5,7 +37,21 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
 
-/// Event stream subscription
+/// Event stream subscription configuration.
+///
+/// Subscriptions define which events a consumer wants to receive from the event stream.
+/// They support filtering by aggregate type, event type, and time ranges.
+///
+/// # Example
+///
+/// ```rust
+/// use eventuali_core::SubscriptionBuilder;
+///
+/// let subscription = SubscriptionBuilder::new()
+///     .aggregate_type("User".to_string())
+///     .event_type("UserRegistered".to_string())
+///     .build();
+/// ```
 #[derive(Debug, Clone)]
 pub struct Subscription {
     pub id: String,
@@ -14,7 +60,13 @@ pub struct Subscription {
     pub from_timestamp: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-/// Event stream message
+/// Event stream message containing an event and its position information.
+///
+/// StreamEvent wraps an event with position metadata for stream processing:
+/// - `stream_position`: Position within the aggregate stream
+/// - `global_position`: Global position across all events
+///
+/// This enables ordered processing and checkpoint management.
 #[derive(Debug, Clone)]
 pub struct StreamEvent {
     pub event: Event,
@@ -22,7 +74,47 @@ pub struct StreamEvent {
     pub global_position: u64,
 }
 
-/// Event streaming trait
+/// Trait for event streaming implementations.
+///
+/// EventStreamer provides the core streaming interface for real-time event processing.
+/// Implementations can be in-memory (for testing), Redis-based, or other message brokers.
+///
+/// # Example Implementation
+///
+/// ```rust
+/// use eventuali_core::{EventStreamer, Subscription, EventStreamReceiver, Event, Result};
+/// use async_trait::async_trait;
+///
+/// struct MyStreamer;
+///
+/// #[async_trait]
+/// impl EventStreamer for MyStreamer {
+///     async fn subscribe(&self, subscription: Subscription) -> Result<EventStreamReceiver> {
+///         // Implementation here
+///         todo!()
+///     }
+///
+///     async fn unsubscribe(&self, subscription_id: &str) -> Result<()> {
+///         // Implementation here
+///         todo!()
+///     }
+///
+///     async fn publish_event(&self, event: Event, stream_position: u64, global_position: u64) -> Result<()> {
+///         // Implementation here
+///         todo!()
+///     }
+///
+///     async fn get_stream_position(&self, stream_id: &str) -> Result<Option<u64>> {
+///         // Implementation here
+///         todo!()
+///     }
+///
+///     async fn get_global_position(&self) -> Result<u64> {
+///         // Implementation here
+///         todo!()
+///     }
+/// }
+/// ```
 #[async_trait]
 pub trait EventStreamer {
     async fn subscribe(&self, subscription: Subscription) -> Result<EventStreamReceiver>;
@@ -35,7 +127,30 @@ pub trait EventStreamer {
 /// Event stream receiver
 pub type EventStreamReceiver = tokio::sync::broadcast::Receiver<StreamEvent>;
 
-/// In-memory event streamer implementation
+/// In-memory event streamer implementation for development and testing.
+///
+/// InMemoryEventStreamer provides a simple, fast event streaming implementation
+/// that runs entirely in memory. It's perfect for:
+/// - Development and testing
+/// - Single-process applications
+/// - Prototyping event-driven architectures
+///
+/// For production use with multiple processes, consider a distributed streaming
+/// solution like Redis Streams or Apache Kafka.
+///
+/// # Example
+///
+/// ```rust
+/// use eventuali_core::{InMemoryEventStreamer, SubscriptionBuilder};
+///
+/// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+/// let streamer = InMemoryEventStreamer::new();
+///
+/// let subscription = SubscriptionBuilder::new().build();
+/// let mut receiver = streamer.subscribe(subscription).await?;
+/// # Ok(())
+/// # }
+/// ```
 pub struct InMemoryEventStreamer {
     sender: broadcast::Sender<StreamEvent>,
     subscriptions: Arc<Mutex<HashMap<String, Subscription>>>,

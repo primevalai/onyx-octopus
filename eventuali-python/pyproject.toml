@@ -57,7 +57,7 @@ dev = [
 Homepage = "https://github.com/primevalai/onyx-octopus"
 Repository = "https://github.com/primevalai/onyx-octopus"
 Documentation = "https://github.com/primevalai/onyx-octopus"
-Issues = "https://github.com/primevalai/onyx-octopus/issues"
+"Bug Reports" = "https://github.com/primevalai/onyx-octopus/issues"
 Changelog = "https://github.com/primevalai/onyx-octopus/releases"
 
 [tool.maturin]

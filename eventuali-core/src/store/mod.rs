@@ -1,3 +1,30 @@
+//! Event store implementations and abstractions.
+//!
+//! This module provides the core event storage functionality for Eventuali:
+//! - [`EventStore`] trait defining the storage interface
+//! - [`EventStoreImpl`] concrete implementation with backend abstraction
+//! - Multiple backends: PostgreSQL, SQLite
+//! - Configuration and factory functions
+//!
+//! # Example
+//!
+//! ```rust
+//! use eventuali_core::{EventStoreConfig, create_event_store};
+//!
+//! # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+//! // Create SQLite event store
+//! let config = EventStoreConfig::sqlite(":memory:").await?;
+//! let store = create_event_store(config).await?;
+//!
+//! // Create PostgreSQL event store
+//! let config = EventStoreConfig::postgres(
+//!     "postgresql://user:pass@localhost/events"
+//! ).await?;
+//! let store = create_event_store(config).await?;
+//! # Ok(())
+//! # }
+//! ```
+
 pub mod traits;
 pub mod postgres;
 pub mod sqlite;
@@ -12,6 +39,21 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
+/// Core event store implementation with pluggable backends.
+///
+/// EventStoreImpl provides a unified interface over different storage backends
+/// while maintaining consistency guarantees and optional event streaming.
+///
+/// # Type Parameters
+///
+/// * `B` - The backend implementation (PostgreSQL, SQLite, etc.)
+///
+/// # Features
+///
+/// - Atomic event batching
+/// - Optional real-time event streaming
+/// - Global event ordering
+/// - Backend abstraction
 pub struct EventStoreImpl<B: EventStoreBackend> {
     backend: B,
     streamer: Option<Arc<dyn EventStreamer + Send + Sync>>,
@@ -19,6 +61,23 @@ pub struct EventStoreImpl<B: EventStoreBackend> {
 }
 
 impl<B: EventStoreBackend> EventStoreImpl<B> {
+    /// Creates a new event store with the specified backend.
+    ///
+    /// # Arguments
+    ///
+    /// * `backend` - The storage backend implementation
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use eventuali_core::store::{EventStoreImpl, sqlite::SQLiteBackend};
+    ///
+    /// # async fn example() -> Result<(), Box<dyn std::error::Error>> {
+    /// let backend = SQLiteBackend::new(":memory:").await?;
+    /// let store = EventStoreImpl::new(backend);
+    /// # Ok(())
+    /// # }
+    /// ```
     pub fn new(backend: B) -> Self {
         Self { 
             backend,

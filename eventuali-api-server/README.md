@@ -74,47 +74,6 @@ eventuali-api-server
 - `GET /docs` - Swagger UI documentation
 - `GET /openapi.json` - OpenAPI schema
 
-## Event Types
-
-### Agent Events
-
-```json
-{
-  "name": "agent.started",
-  "attributes": {
-    "agent_name": "url-cacher",
-    "message": "Agent started successfully"
-  },
-  "aggregate_id": "url-cacher-abc123",
-  "correlation_id": "workflow-def456",
-  "causation_id": "parent-agent-789"
-}
-```
-
-### Workflow Events
-
-```json
-{
-  "name": "workflow.started", 
-  "attributes": {
-    "user_prompt": "Cache the documentation page"
-  },
-  "aggregate_id": "workflow-def456"
-}
-```
-
-### System Events
-
-```json
-{
-  "name": "session.started",
-  "attributes": {
-    "session_type": "interactive"
-  },
-  "aggregate_id": "session-ghi789"
-}
-```
-
 ## Configuration
 
 The server can be configured via CLI options, environment variables, or programmatically:
