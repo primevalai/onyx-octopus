@@ -5,7 +5,7 @@ edition = "2021"
 description = "High-performance event sourcing core library in Rust"
 authors = ["PrimevalAI <info@primeval.ai>"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/primevalai/eventuali"
+repository = "https://github.com/primevalai/onyx-octopus"
 
 [dependencies]
 tokio = { workspace = true }
